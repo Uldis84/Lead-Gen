@@ -1,386 +1,543 @@
-
-import { useState, useEffect } from "react";
-
-const STORAGE_KEY = "uldis-leads-v1";
-
-const STATUS_OPTIONS = ["Not Contacted", "DM Sent", "Email Sent", "Replied", "Call Booked", "Closed", "Not Interested"];
-const METHOD_OPTIONS = ["Instagram DM", "Email", "YouTube Comment", "Twitter/X DM", "LinkedIn"];
-const FIT_COLORS = {
-  "High Fit": { bg: "#1a3a1f", text: "#4ade80", border: "#2d5a35" },
-  "Moderate Fit": { bg: "#3a2e0a", text: "#fbbf24", border: "#5a4a10" },
-  "Low Fit": { bg: "#3a0f0f", text: "#f87171", border: "#5a1f1f" },
-  "": { bg: "#1a1a1a", text: "#888", border: "#2a2a2a" },
-};
-
-const emptyLead = () => ({
-  id: Date.now() + Math.random(),
-  date: new Date().toISOString().slice(0, 10),
-  language: "English",
-  name: "",
-  link: "",
-  subscribers: "",
-  avgViews: "",
-  contact: "",
-  fitAssessment: "",
-  fitReason: "",
-  status: "Not Contacted",
-  outreachMethod: "",
-  notes: "",
-  loading: false,
-});
-
-export default function LeadTracker() {
-  const [leads, setLeads] = useState([]);
-  const [bulkText, setBulkText] = useState("");
-  const [showBulk, setShowBulk] = useState(false);
-  const [bulkLoading, setBulkLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [filterFit, setFilterFit] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [editingCell, setEditingCell] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await window.storage.get(STORAGE_KEY);
-        if (r?.value) setLeads(JSON.parse(r.value));
-      } catch {}
-    })();
-  }, []);
-
-  const save = async (newLeads) => {
-    setLeads(newLeads);
-    try { await window.storage.set(STORAGE_KEY, JSON.stringify(newLeads)); } catch {}
-  };
-
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const addLead = () => {
-    save([...leads, emptyLead()]);
-  };
-
-  const updateLead = (id, field, value) => {
-    save(leads.map(l => l.id === id ? { ...l, [field]: value } : l));
-  };
-
-  const deleteLead = (id) => {
-    save(leads.filter(l => l.id !== id));
-  };
-
-  const assessFit = async (id) => {
-    const lead = leads.find(l => l.id === id);
-    if (!lead.name && !lead.link) return showToast("Add a channel name first", "error");
-    save(leads.map(l => l.id === id ? { ...l, loading: true } : l));
-    try {
-      const prompt = `You are an expert video editor outreach assistant. Analyze this YouTube channel and assess if they need a video editor.
-
-Channel: ${lead.name || lead.link}
-Subscribers: ${lead.subscribers || "unknown"}
-Avg Views/Video: ${lead.avgViews || "unknown"}
-Contact: ${lead.contact || "unknown"}
-Niche: Based on channel name
-
-Assess the fit for hiring a freelance video editor (long-form YouTube specialist).
-
-Respond ONLY with valid JSON like this:
-{"fit":"High Fit","reason":"One sentence explanation max 12 words"}
-
-Fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
-
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.map(c => c.text || "").join("") || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      save(leads.map(l => l.id === id ? {
-        ...l,
-        fitAssessment: parsed.fit || "",
-        fitReason: parsed.reason || "",
-        loading: false
-      } : l));
-      showToast("Fit assessed ✓");
-    } catch {
-      save(leads.map(l => l.id === id ? { ...l, loading: false } : l));
-      showToast("Assessment failed", "error");
-    }
-  };
-
-  const bulkAssess = async () => {
-    if (!bulkText.trim()) return;
-    setBulkLoading(true);
-    try {
-      const prompt = `You are an outreach assistant for a freelance video editor (long-form YouTube specialist in food/travel/lifestyle).
-
-Analyze these YouTube channels and assess if they need a video editor. Here is the raw data:
-
-${bulkText}
-
-For each channel you can identify, return a JSON array. Each object must have:
-- "name": channel name or @handle
-- "subscribers": subscriber count if visible (string)
-- "avgViews": average views if visible (string)  
-- "contact": any email or website mentioned
-- "fit": exactly "High Fit", "Moderate Fit", or "Low Fit"
-- "reason": max 10 words explaining the fit
-
-Respond ONLY with a valid JSON array, no markdown, no explanation.`;
-
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.map(c => c.text || "").join("") || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const newLeads = parsed.map(ch => ({
-        ...emptyLead(),
-        id: Date.now() + Math.random(),
-        name: ch.name || "",
-        link: ch.name?.startsWith("@") ? `youtube.com/${ch.name}` : "",
-        subscribers: ch.subscribers || "",
-        avgViews: ch.avgViews || "",
-        contact: ch.contact || "",
-        fitAssessment: ch.fit || "",
-        fitReason: ch.reason || "",
-      }));
-      save([...leads, ...newLeads]);
-      setBulkText("");
-      setShowBulk(false);
-      showToast(`${newLeads.length} channels imported ✓`);
-    } catch {
-      showToast("Bulk import failed — check format", "error");
-    }
-    setBulkLoading(false);
-  };
-
-  const filtered = leads.filter(l => {
-    if (filterFit !== "All" && l.fitAssessment !== filterFit) return false;
-    if (filterStatus !== "All" && l.status !== filterStatus) return false;
-    return true;
-  });
-
-  const stats = {
-    total: leads.length,
-    high: leads.filter(l => l.fitAssessment === "High Fit").length,
-    contacted: leads.filter(l => l.status !== "Not Contacted" && l.status !== "").length,
-    closed: leads.filter(l => l.status === "Closed").length,
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#080808", color: "#e8e8e8", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { height: 6px; width: 6px; } 
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        input, textarea, select { font-family: inherit; }
-        .cell-input { background: transparent; border: none; color: #e0e0e0; font-size: 13px; width: 100%; outline: none; font-family: inherit; }
-        .cell-input:focus { color: #fff; }
-        .cell-input::placeholder { color: #444; }
-        select.cell-input option { background: #1a1a1a; color: #e0e0e0; }
-        .row-hover:hover { background: rgba(255,255,255,0.025) !important; }
-        .assess-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
-        .assess-btn:hover { background: #222; color: #e8440a; border-color: #e8440a44; }
-        .delete-btn { background: none; border: none; color: #333; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
-        .delete-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
-        .filter-btn { background: #111; border: 1px solid #222; color: #888; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .filter-btn.active { background: #1a1a1a; border-color: #e8440a; color: #e8440a; }
-        .filter-btn:hover { border-color: #333; color: #ccc; }
-        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #333; border-top-color: #e8440a; border-radius: 50%; animation: spin 0.7s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
-      `}</style>
-
-      {/* Header */}
-      <div style={{ borderBottom: "1px solid #161616", padding: "20px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#080808", zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: 20, letterSpacing: "-0.02em" }}>Lead Tracker</div>
-            <div style={{ fontSize: 11, color: "#444", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 1 }}>Uldis Kipens — Outreach System</div>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setShowBulk(!showBulk)} style={{ background: "#111", border: "1px solid #222", color: "#aaa", fontSize: 13, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
-            onMouseEnter={e => e.target.style.borderColor = "#e8440a"} onMouseLeave={e => e.target.style.borderColor = "#222"}>
-            ⚡ Bulk Import (AI)
-          </button>
-          <button onClick={addLead} style={{ background: "#e8440a", border: "none", color: "#fff", fontSize: 13, padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontWeight: 500, transition: "background 0.2s" }}
-            onMouseEnter={e => e.target.style.background = "#d13d09"} onMouseLeave={e => e.target.style.background = "#e8440a"}>
-            + Add Lead
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: "flex", gap: 1, padding: "0 28px", marginTop: 20, marginBottom: 20 }}>
-        {[
-          { label: "Total Leads", value: stats.total, accent: "#e8e8e8" },
-          { label: "High Fit", value: stats.high, accent: "#4ade80" },
-          { label: "Contacted", value: stats.contacted, accent: "#fbbf24" },
-          { label: "Clients Won", value: stats.closed, accent: "#e8440a" },
-        ].map(s => (
-          <div key={s.label} style={{ flex: 1, padding: "16px 20px", background: "#0e0e0e", border: "1px solid #161616", borderRadius: 0 }}>
-            <div style={{ fontSize: 26, fontFamily: "'Instrument Serif', serif", fontStyle: "italic", color: s.accent, letterSpacing: "-0.03em", lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: "#444", marginTop: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bulk Import Panel */}
-      {showBulk && (
-        <div style={{ margin: "0 28px 20px", background: "#0e0e0e", border: "1px solid #222", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
-            Paste YouTube channel data (names, subscriber counts, links, anything you copied from YouTube search results or the Editing Elite tool):
-          </div>
-          <textarea
-            value={bulkText}
-            onChange={e => setBulkText(e.target.value)}
-            placeholder={"@erickavelaars — 5.65K subs\n@juansmmajourney — 17K subs — sell-deploy.com\n@WifiLevi — 3.69K subs — instagram.com/wifilevi\n..."}
-            style={{ width: "100%", background: "#0a0a0a", border: "1px solid #222", borderRadius: 8, padding: "12px 16px", color: "#ddd", fontSize: 13, minHeight: 120, resize: "vertical", outline: "none", fontFamily: "monospace", lineHeight: 1.6 }}
-          />
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button onClick={bulkAssess} disabled={bulkLoading} style={{ background: "#e8440a", border: "none", color: "#fff", fontSize: 13, padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontWeight: 500, opacity: bulkLoading ? 0.7 : 1 }}>
-              {bulkLoading ? <><span className="spinner" style={{ marginRight: 8, verticalAlign: "middle" }}></span>Analyzing...</> : "⚡ Analyze & Import with AI"}
-            </button>
-            <button onClick={() => setShowBulk(false)} style={{ background: "#111", border: "1px solid #222", color: "#888", fontSize: 13, padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div style={{ padding: "0 28px 16px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 11, color: "#444", marginRight: 4, textTransform: "uppercase", letterSpacing: "0.1em" }}>Filter:</span>
-        {["All", "High Fit", "Moderate Fit", "Low Fit"].map(f => (
-          <button key={f} className={`filter-btn${filterFit === f ? " active" : ""}`} onClick={() => setFilterFit(f)}>{f}</button>
-        ))}
-        <div style={{ width: 1, height: 16, background: "#222", margin: "0 4px" }} />
-        {["All", ...STATUS_OPTIONS.slice(0, 4)].map(s => (
-          <button key={s} className={`filter-btn${filterStatus === s ? " active" : ""}`} onClick={() => setFilterStatus(s)}>{s}</button>
-        ))}
-      </div>
-
-      {/* Table */}
-      <div style={{ overflowX: "auto", padding: "0 28px 40px" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
-              {["Date", "Lang", "Channel", "Subs", "Avg Views", "Contact", "Fit Assessment", "Status", "Method", "Notes", "AI", ""].map(h => (
-                <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, color: "#444", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={12} style={{ padding: "60px 12px", textAlign: "center", color: "#333", fontSize: 14 }}>
-                  No leads yet — add one or use Bulk Import ⚡
-                </td>
-              </tr>
-            )}
-            {filtered.map((lead, i) => {
-              const fitStyle = FIT_COLORS[lead.fitAssessment] || FIT_COLORS[""];
-              return (
-                <tr key={lead.id} className="row-hover" style={{ borderBottom: "1px solid #111", background: i % 2 === 0 ? "#0a0a0a" : "#080808" }}>
-                  {/* Date */}
-                  <td style={{ padding: "10px 12px", minWidth: 100 }}>
-                    <input className="cell-input" type="date" value={lead.date} onChange={e => updateLead(lead.id, "date", e.target.value)} style={{ fontSize: 12 }} />
-                  </td>
-                  {/* Language */}
-                  <td style={{ padding: "10px 12px", minWidth: 80 }}>
-                    <select className="cell-input" value={lead.language} onChange={e => updateLead(lead.id, "language", e.target.value)}>
-                      {["English", "German", "Spanish", "French", "Other"].map(l => <option key={l}>{l}</option>)}
-                    </select>
-                  </td>
-                  {/* Channel Name + Link */}
-                  <td style={{ padding: "10px 12px", minWidth: 180 }}>
-                    <input className="cell-input" value={lead.name} onChange={e => updateLead(lead.id, "name", e.target.value)} placeholder="@channelname" style={{ fontWeight: 500, color: "#a0c4ff", marginBottom: 2 }} />
-                    <input className="cell-input" value={lead.link} onChange={e => updateLead(lead.id, "link", e.target.value)} placeholder="youtube.com/..." style={{ fontSize: 11, color: "#555" }} />
-                  </td>
-                  {/* Subscribers */}
-                  <td style={{ padding: "10px 12px", minWidth: 80 }}>
-                    <input className="cell-input" value={lead.subscribers} onChange={e => updateLead(lead.id, "subscribers", e.target.value)} placeholder="5.6K" />
-                  </td>
-                  {/* Avg Views */}
-                  <td style={{ padding: "10px 12px", minWidth: 90 }}>
-                    <input className="cell-input" value={lead.avgViews} onChange={e => updateLead(lead.id, "avgViews", e.target.value)} placeholder="1K–4K" />
-                  </td>
-                  {/* Contact */}
-                  <td style={{ padding: "10px 12px", minWidth: 160 }}>
-                    <input className="cell-input" value={lead.contact} onChange={e => updateLead(lead.id, "contact", e.target.value)} placeholder="email or website" style={{ fontSize: 12 }} />
-                  </td>
-                  {/* Fit Assessment */}
-                  <td style={{ padding: "10px 12px", minWidth: 200 }}>
-                    {lead.fitAssessment ? (
-                      <div>
-                        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500, background: fitStyle.bg, color: fitStyle.text, border: `1px solid ${fitStyle.border}`, marginBottom: 4 }}>
-                          {lead.fitAssessment}
-                        </span>
-                        {lead.fitReason && <div style={{ fontSize: 11, color: "#555", lineHeight: 1.4 }}>{lead.fitReason}</div>}
-                      </div>
-                    ) : (
-                      <span style={{ color: "#333", fontSize: 12 }}>—</span>
-                    )}
-                  </td>
-                  {/* Status */}
-                  <td style={{ padding: "10px 12px", minWidth: 130 }}>
-                    <select className="cell-input" value={lead.status} onChange={e => updateLead(lead.id, "status", e.target.value)}
-                      style={{ color: lead.status === "Closed" ? "#4ade80" : lead.status === "Replied" ? "#fbbf24" : "#aaa" }}>
-                      {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </td>
-                  {/* Outreach Method */}
-                  <td style={{ padding: "10px 12px", minWidth: 130 }}>
-                    <select className="cell-input" value={lead.outreachMethod} onChange={e => updateLead(lead.id, "outreachMethod", e.target.value)}>
-                      <option value="">Select...</option>
-                      {METHOD_OPTIONS.map(m => <option key={m}>{m}</option>)}
-                    </select>
-                  </td>
-                  {/* Notes */}
-                  <td style={{ padding: "10px 12px", minWidth: 180 }}>
-                    <input className="cell-input" value={lead.notes} onChange={e => updateLead(lead.id, "notes", e.target.value)} placeholder="Notes..." />
-                  </td>
-                  {/* AI Button */}
-                  <td style={{ padding: "10px 12px" }}>
-                    <button className="assess-btn" onClick={() => assessFit(lead.id)} disabled={lead.loading}>
-                      {lead.loading ? <span className="spinner"></span> : "AI Assess"}
-                    </button>
-                  </td>
-                  {/* Delete */}
-                  <td style={{ padding: "10px 4px" }}>
-                    <button className="delete-btn" onClick={() => deleteLead(lead.id)}>×</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className="toast" style={{ background: toast.type === "error" ? "#3a0f0f" : "#0f2a14", border: `1px solid ${toast.type === "error" ? "#5a1f1f" : "#1a4a24"}`, color: toast.type === "error" ? "#f87171" : "#4ade80" }}>
-          {toast.msg}
-        </div>
-      )}
-    </div>
-  );
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Tracker — Uldis Kipens</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080808;--s1:#0d0d0d;--s2:#121212;--b1:#1c1c1c;--b2:#242424;
+  --txt:#e0e0e0;--muted:#555;--subtle:#2a2a2a;
+  --acc:#e8440a;--acc2:#ff6835;
+  --gr-bg:#0c1f12;--gr:#4ade80;--gr-b:#1a3a22;
+  --yw-bg:#1c1500;--yw:#fbbf24;--yw-b:#38280a;
+  --rd-bg:#1c0808;--rd:#f87171;--rd-b:#3a1414;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
 }
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#222;border-radius:3px}
+input,select,textarea,button{font-family:var(--sans)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;line-height:1.2}
+.btn-p{background:var(--acc);color:#fff}.btn-p:hover{background:var(--acc2)}
+.btn-s{background:var(--s2);color:var(--txt);border:1px solid var(--b2)}.btn-s:hover{background:#161616}
+.btn-g{background:none;color:var(--muted);border:1px solid var(--b1)}.btn-g:hover{color:var(--txt);border-color:var(--b2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+input[type=text],input[type=email],input[type=password],input[type=search],input[type=date]{
+  background:var(--s2);border:1px solid var(--b2);color:var(--txt);border-radius:8px;padding:9px 13px;font-size:13px;outline:none;transition:border .18s;width:100%
+}
+input:focus{border-color:#333}input::placeholder{color:#333}
+select{background:var(--s2);border:1px solid var(--b2);color:var(--txt);border-radius:8px;padding:9px 13px;font-size:13px;outline:none;cursor:pointer;width:100%}
+select option{background:var(--s1)}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;border:1px solid}
+.t-h{background:var(--gr-bg);color:var(--gr);border-color:var(--gr-b)}
+.t-m{background:var(--yw-bg);color:var(--yw);border-color:var(--yw-b)}
+.t-l{background:var(--rd-bg);color:var(--rd);border-color:var(--rd-b)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid #2e2e2e;border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+nav{position:sticky;top:0;z-index:50;background:rgba(8,8,8,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--b1);padding:0 20px;display:flex;align-items:center;height:52px;gap:16px}
+.nav-logo{font-family:var(--serif);font-style:italic;font-size:18px;letter-spacing:-.02em;white-space:nowrap}
+.tab-btn{padding:6px 14px;font-size:13px;cursor:pointer;border:none;border-bottom:2px solid transparent;color:var(--muted);background:none;transition:all .18s}
+.tab-btn.on{color:var(--txt);border-bottom-color:var(--acc)}
+.tab-btn:hover{color:var(--txt)}
+.stat-n{font-family:var(--serif);font-style:italic;font-size:28px;letter-spacing:-.03em;line-height:1;margin-bottom:3px}
+.stat-l{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.filter-pill{font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--b1);background:none;color:var(--muted);transition:all .15s}
+.filter-pill.on{border-color:var(--acc);background:#1a0803;color:var(--acc)}
+.filter-pill:hover{color:var(--txt)}
+th{padding:7px 12px;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--b2);text-align:left;white-space:nowrap;background:var(--s1)}
+td{border-bottom:1px solid var(--b1)}
+.trow{background:var(--s1);transition:background .12s}
+.trow:hover{background:#101010}
+.ci{background:none;border:none;color:var(--txt);font-size:13px;width:100%;outline:none;padding:10px 12px;display:block}
+.ci::placeholder{color:#2e2e2e}
+.ci-sm{font-size:12px;color:var(--muted)}
+.ci-sel{background:none;border:none;color:var(--muted);font-size:12px;width:100%;outline:none;cursor:pointer;padding:10px 12px}
+.ci-sel option{background:var(--s2)}
+.ai-btn{background:none;border:1px solid var(--b1);color:var(--muted);font-size:11px;padding:4px 9px;border-radius:6px;cursor:pointer;transition:all .18s;white-space:nowrap;font-family:var(--sans)}
+.ai-btn:hover{border-color:var(--acc);color:var(--acc)}
+.del-btn{background:none;border:none;color:#2a2a2a;cursor:pointer;font-size:18px;padding:4px 10px;transition:color .15s;line-height:1}
+.del-btn:hover{color:var(--rd)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(5px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:100%;padding:28px;overflow-y:auto;max-height:90vh}
+.modal-sm{max-width:500px}.modal-lg{max-width:820px}
+.frow{margin-bottom:16px}
+.flabel{font-size:12px;color:#888;display:block;margin-bottom:6px}
+.ftip{font-size:11px;color:#444;margin-top:5px;line-height:1.5}
+.ftip a{color:#666;text-decoration:underline}
+.section-h{font-family:var(--serif);font-style:italic;font-size:20px;letter-spacing:-.02em;margin-bottom:18px}
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
+.guide-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:20px 22px;margin-bottom:18px;display:flex;gap:14px}
+.guide-num{width:28px;height:28px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;margin-top:1px;color:#fff}
+.guide-step{font-size:13px;color:#aaa;line-height:1.6;margin-bottom:2px}
+.guide-note{margin-top:10px;font-size:11px;color:var(--muted);background:#0a0a0a;border:1px solid var(--b1);border-radius:7px;padding:8px 12px}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;animation:su .22s ease;display:none}
+@keyframes su{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.yt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1);cursor:pointer;transition:opacity .12s;user-select:none}
+.yt-thumb{width:32px;height:32px;border-radius:50%;background:#1a1a1a;flex-shrink:0;object-fit:cover;border:1px solid var(--b2)}
+.err-bar{font-size:12px;color:var(--rd);background:var(--rd-bg);border:1px solid var(--rd-b);padding:8px 12px;border-radius:7px;margin-top:10px;display:none}
+.warn-bar{font-size:11px;color:var(--yw);background:var(--yw-bg);border:1px solid var(--yw-b);padding:3px 10px;border-radius:10px;display:none}
+@media(max-width:600px){nav{padding:0 12px}.stats-grid{grid-template-columns:repeat(2,1fr)!important}}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">Uldis — Leads</span>
+  <div style="display:flex;gap:2px;flex:1">
+    <button class="tab-btn on" id="tb-tracker" onclick="switchTab('tracker')">Tracker</button>
+    <button class="tab-btn" id="tb-guide" onclick="switchTab('guide')">Setup Guide</button>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="warn-bar" class="warn-bar">⚠ API Keys fehlen</span>
+    <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="openModal('m-settings')">⚙ Settings</button>
+  </div>
+</nav>
+
+<!-- TRACKER TAB -->
+<div id="tab-tracker" style="padding:20px">
+  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--b1);border-radius:12px;overflow:hidden;margin-bottom:20px">
+    <div style="padding:16px 20px;background:var(--s1);border-right:1px solid var(--b1)">
+      <div class="stat-n" id="s-total" style="color:var(--txt)">0</div>
+      <div class="stat-l">Total Leads</div>
+    </div>
+    <div style="padding:16px 20px;background:var(--s1);border-right:1px solid var(--b1)">
+      <div class="stat-n" id="s-high" style="color:var(--gr)">0</div>
+      <div class="stat-l">High Fit</div>
+    </div>
+    <div style="padding:16px 20px;background:var(--s1);border-right:1px solid var(--b1)">
+      <div class="stat-n" id="s-cont" style="color:var(--yw)">0</div>
+      <div class="stat-l">Contacted</div>
+    </div>
+    <div style="padding:16px 20px;background:var(--s1)">
+      <div class="stat-n" id="s-won" style="color:var(--acc)">0</div>
+      <div class="stat-l">Clients Won</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <button class="btn btn-p" onclick="openModal('m-search')">🔍 YouTube Search</button>
+    <button class="btn btn-s" onclick="addLead()">+ Manuell</button>
+    <button class="btn btn-g" onclick="exportCSV()">↓ CSV Export</button>
+    <div style="flex:1"></div>
+    <div id="fit-filters" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+  </div>
+  <div style="background:var(--s1);border:1px solid var(--b1);border-radius:12px;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:1100px">
+        <thead>
+          <tr>
+            <th>Channel</th><th>Subs</th><th>Avg Views</th><th>Kontakt</th>
+            <th>Fit Assessment</th><th>Status</th><th>Methode</th><th>Notizen</th>
+            <th></th><th></th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE TAB -->
+<div id="tab-guide" style="display:none;max-width:620px;margin:36px auto;padding:0 20px 60px">
+  <div class="eyebrow">Einrichtung</div>
+  <div class="section-h" style="margin-bottom:28px">Setup Guide</div>
+  <div class="guide-card">
+    <div class="guide-num">1</div>
+    <div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:10px">YouTube API Key holen (kostenlos)</div>
+      <div class="guide-step">1. Gehe zu <a href="https://console.cloud.google.com" target="_blank" style="color:#4a9eff">console.cloud.google.com</a></div>
+      <div class="guide-step">2. Neues Projekt erstellen</div>
+      <div class="guide-step">3. "APIs & Services" → "Bibliothek" → "YouTube Data API v3" → Aktivieren</div>
+      <div class="guide-step">4. "Anmeldedaten erstellen" → "API-Schlüssel" → Key kopieren</div>
+      <div class="guide-step">5. Key in ⚙ Settings einfügen</div>
+      <div class="guide-note">Kostenlos: 10.000 Requests/Tag</div>
+    </div>
+  </div>
+  <div class="guide-card">
+    <div class="guide-num">2</div>
+    <div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:10px">Anthropic API Key (für AI Assessment)</div>
+      <div class="guide-step">1. Gehe zu <a href="https://console.anthropic.com" target="_blank" style="color:#4a9eff">console.anthropic.com</a></div>
+      <div class="guide-step">2. "API Keys" → "Create Key" → Key kopieren</div>
+      <div class="guide-step">3. Key in ⚙ Settings einfügen</div>
+      <div class="guide-note">~$0.003 pro Assessment — 1000 Channels ≈ $3</div>
+    </div>
+  </div>
+  <div class="guide-card">
+    <div class="guide-num">3</div>
+    <div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:10px">Auf GitHub Pages deployen</div>
+      <div class="guide-step">1. Diese Datei als <strong>index.html</strong> speichern</div>
+      <div class="guide-step">2. Neues GitHub Repo erstellen → index.html hochladen</div>
+      <div class="guide-step">3. Settings → Pages → Source: main → Save</div>
+      <div class="guide-step">4. URL: <strong>dein-name.github.io/lead-tracker</strong></div>
+      <div class="guide-note">Leads werden lokal in deinem Browser gespeichert</div>
+    </div>
+  </div>
+  <div class="guide-card">
+    <div class="guide-num">4</div>
+    <div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:10px">Workflow</div>
+      <div class="guide-step">1. 🔍 YouTube Search → Keyword: "food london vlog", "travel creator"</div>
+      <div class="guide-step">2. 20–50 Channels automatisch mit Subs + Kontakt</div>
+      <div class="guide-step">3. ⚡ AI Assess All → High / Moderate / Low Fit</div>
+      <div class="guide-step">4. High Fits importieren → DMs schreiben → Status tracken</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="m-settings" class="overlay" style="display:none" onclick="if(event.target===this)closeModal('m-settings')">
+  <div class="modal modal-sm" onclick="event.stopPropagation()">
+    <div class="eyebrow">Konfiguration</div>
+    <div class="section-h">API Keys</div>
+    <div class="frow">
+      <label class="flabel">YouTube Data API v3 Key</label>
+      <input type="password" id="inp-yt" placeholder="AIza...">
+      <div class="ftip">Kostenlos bei <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → YouTube Data API v3 → Anmeldedaten</div>
+    </div>
+    <div class="frow">
+      <label class="flabel">Anthropic API Key</label>
+      <input type="password" id="inp-ai" placeholder="sk-ant-...">
+      <div class="ftip">Bei <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key</div>
+    </div>
+    <div style="background:#0a0a0a;border:1px solid var(--b1);border-radius:9px;padding:11px 13px;margin-bottom:20px;font-size:11px;color:#444;line-height:1.6">
+      🔒 Keys werden nur lokal in deinem Browser gespeichert.
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" onclick="saveSettings()">Speichern</button>
+      <button class="btn btn-g" onclick="closeModal('m-settings')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div id="m-search" class="overlay" style="display:none" onclick="if(event.target===this)closeModal('m-search')">
+  <div class="modal modal-lg" onclick="event.stopPropagation()" style="padding:0;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:22px 24px;border-bottom:1px solid var(--b1)">
+      <div class="eyebrow">YouTube Search</div>
+      <div class="section-h">Channels automatisch finden</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="search" id="yt-kw" placeholder='"food london vlog", "travel creator", "smma coach"' style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
+        <select id="yt-max" style="width:110px">
+          <option value="10">10 results</option>
+          <option value="20" selected>20 results</option>
+          <option value="30">30 results</option>
+          <option value="50">50 results</option>
+        </select>
+        <button class="btn btn-p" id="btn-yt-search" onclick="doYTSearch()">🔍 Search</button>
+      </div>
+      <div id="search-err" class="err-bar"></div>
+    </div>
+    <div id="yt-results" style="flex:1;overflow-y:auto;padding:0 24px;min-height:180px;max-height:52vh">
+      <div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">Keyword eingeben und Search klicken</div>
+    </div>
+    <div id="search-footer" style="display:none;padding:14px 24px;border-top:1px solid var(--b1);gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-p" id="btn-import" onclick="importSelected()">Importieren</button>
+      <button class="btn btn-g" id="btn-assess" onclick="assessAll()">⚡ AI Assess All</button>
+      <span id="assess-st" style="font-size:12px;color:var(--muted)"></span>
+      <div style="flex:1"></div>
+      <button class="btn btn-g" onclick="closeModal('m-search')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let leads    = JSON.parse(localStorage.getItem('uldis-leads-v3') || '[]');
+let settings = JSON.parse(localStorage.getItem('uldis-keys-v1')  || '{}');
+let ytResults = [], ytSelected = new Set(), filterFit = 'All';
+
+const STATUS = ['Not Contacted','DM Sent','Email Sent','Replied','Call Booked','Closed','Not Interested'];
+const METHOD = ['—','Instagram DM','Email','YouTube Comment','Twitter/X DM','LinkedIn'];
+const FITS   = ['All','High Fit','Moderate Fit','Low Fit'];
+
+function save(){ localStorage.setItem('uldis-leads-v3', JSON.stringify(leads)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function fmtN(n){
+  const x=parseInt(n); if(!n||isNaN(x)) return n||'—';
+  return x>=1e6?(x/1e6).toFixed(1)+'M':x>=1e3?(x/1e3).toFixed(1)+'K':x+'';
+}
+function fitTag(f){
+  if(f==='High Fit')     return '<span class="tag t-h">High Fit</span>';
+  if(f==='Moderate Fit') return '<span class="tag t-m">Moderate Fit</span>';
+  if(f==='Low Fit')      return '<span class="tag t-l">Low Fit</span>';
+  return '';
+}
+
+function switchTab(t){
+  document.getElementById('tab-tracker').style.display = t==='tracker'?'block':'none';
+  document.getElementById('tab-guide').style.display   = t==='guide'  ?'block':'none';
+  document.getElementById('tb-tracker').classList.toggle('on',t==='tracker');
+  document.getElementById('tb-guide').classList.toggle('on',t==='guide');
+}
+
+function openModal(id){
+  if(id==='m-settings'){
+    document.getElementById('inp-yt').value = settings.ytKey||'';
+    document.getElementById('inp-ai').value = settings.anthropicKey||'';
+  }
+  document.getElementById(id).style.display='flex';
+}
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+function buildFilters(){
+  document.getElementById('fit-filters').innerHTML = FITS.map(f=>
+    `<button class="filter-pill${filterFit===f?' on':''}" onclick="setFit('${f}')">${f}</button>`
+  ).join('');
+}
+function setFit(f){ filterFit=f; buildFilters(); render(); }
+
+function updateStats(){
+  document.getElementById('s-total').textContent = leads.length;
+  document.getElementById('s-high').textContent  = leads.filter(l=>l.fit==='High Fit').length;
+  document.getElementById('s-cont').textContent  = leads.filter(l=>l.status&&l.status!=='Not Contacted').length;
+  document.getElementById('s-won').textContent   = leads.filter(l=>l.status==='Closed').length;
+  document.getElementById('warn-bar').style.display = (!settings.ytKey&&!settings.anthropicKey)?'inline-flex':'none';
+}
+
+function render(){
+  updateStats();
+  const tbody = document.getElementById('leads-tbody');
+  const vis = leads.filter(l=>filterFit==='All'||l.fit===filterFit);
+  if(!vis.length){
+    tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads — YouTube durchsuchen oder manuell hinzufügen</td></tr>';
+    return;
+  }
+  tbody.innerHTML = vis.map(l=>`
+    <tr class="trow">
+      <td style="min-width:200px">
+        <div style="display:flex;align-items:center;gap:9px;padding:4px 12px">
+          ${l.thumb?`<img src="${esc(l.thumb)}" class="yt-thumb" style="width:28px;height:28px">`:
+            '<div style="width:28px;height:28px;border-radius:50%;background:#1a1a1a;flex-shrink:0"></div>'}
+          <div style="min-width:0;flex:1">
+            <input class="ci" style="font-weight:500;color:#a8c8ff;padding:3px 0" value="${esc(l.name)}" placeholder="Channel name" onchange="upd('${l.id}','name',this.value)">
+            <input class="ci ci-sm" style="padding:2px 0" value="${esc(l.link)}" placeholder="youtube.com/..." onchange="upd('${l.id}','link',this.value)">
+          </div>
+        </div>
+      </td>
+      <td style="min-width:70px"><input class="ci ci-sm" value="${esc(l.subs)}" placeholder="5.6K" onchange="upd('${l.id}','subs',this.value)"></td>
+      <td style="min-width:80px"><input class="ci ci-sm" value="${esc(l.avgV)}" placeholder="1K–4K" onchange="upd('${l.id}','avgV',this.value)"></td>
+      <td style="min-width:160px"><input class="ci" style="font-size:12px;color:#4a9eff" value="${esc(l.contact)}" placeholder="email / link" onchange="upd('${l.id}','contact',this.value)"></td>
+      <td style="min-width:200px;padding:10px 12px">
+        ${l.fit?`<div>${fitTag(l.fit)}${l.fitReason?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${esc(l.fitReason)}</div>`:''}</div>`:'<span style="color:var(--subtle);font-size:12px">—</span>'}
+      </td>
+      <td style="min-width:130px">
+        <select class="ci-sel" style="color:${l.status==='Closed'?'var(--gr)':l.status==='Replied'||l.status==='Call Booked'?'var(--yw)':'var(--muted)'}" onchange="upd('${l.id}','status',this.value)">
+          ${STATUS.map(s=>`<option${l.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td style="min-width:130px">
+        <select class="ci-sel" onchange="upd('${l.id}','method',this.value)">
+          ${METHOD.map(m=>`<option${l.method===m?' selected':''}>${m}</option>`).join('')}
+        </select>
+      </td>
+      <td style="min-width:160px"><input class="ci" style="font-size:12px" value="${esc(l.notes)}" placeholder="Notizen…" onchange="upd('${l.id}','notes',this.value)"></td>
+      <td style="padding:10px 8px"><button class="ai-btn" id="ai-${l.id}" onclick="assessOne('${l.id}')">⚡ AI</button></td>
+      <td style="padding:10px 4px"><button class="del-btn" onclick="delLead('${l.id}')">×</button></td>
+    </tr>`).join('');
+}
+
+function upd(id,f,v){ const l=leads.find(x=>x.id===id); if(l){l[f]=v;save();updateStats();} }
+function addLead(){
+  leads.unshift({id:uid(),date:new Date().toISOString().slice(0,10),name:'',link:'',thumb:'',subs:'',avgV:'',contact:'',fit:'',fitReason:'',status:'Not Contacted',method:'',notes:''});
+  save(); render();
+}
+function delLead(id){ leads=leads.filter(l=>l.id!==id); save(); render(); }
+
+function saveSettings(){
+  settings.ytKey        = document.getElementById('inp-yt').value.trim();
+  settings.anthropicKey = document.getElementById('inp-ai').value.trim();
+  localStorage.setItem('uldis-keys-v1', JSON.stringify(settings));
+  closeModal('m-settings');
+  showToast('Keys gespeichert ✓');
+  updateStats();
+}
+
+async function claudeAssess(ch){
+  const prompt=`You are a video editor outreach specialist. The editor specializes in long-form YouTube (food, travel, lifestyle).
+Channel: ${ch.name}, Subs: ${fmtN(ch.subs)}, Avg Views: ${ch.avgV||'unknown'}, Contact: ${ch.contact||'none'}, Description: ${(ch.desc||'').slice(0,150)}
+Is this a good fit for a freelance video editor? Ideal: 5K–300K subs, food/travel/lifestyle niche, consistent uploads.
+Reply ONLY with raw JSON (no markdown, no explanation): {"fit":"High Fit","reason":"Under 12 words"}
+fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':settings.anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:120,messages:[{role:'user',content:prompt}]})
+  });
+  if(!r.ok) throw new Error('Claude API '+r.status);
+  const d=await r.json();
+  return JSON.parse((d.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+}
+
+async function assessOne(id){
+  if(!settings.anthropicKey){showToast('Anthropic Key in Settings eintragen','err');return;}
+  const l=leads.find(x=>x.id===id);
+  const btn=document.getElementById('ai-'+id);
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span>';}
+  try{
+    const r=await claudeAssess(l);
+    l.fit=r.fit; l.fitReason=r.reason; save(); render(); showToast('Assessed ✓');
+  }catch{
+    showToast('Assessment fehlgeschlagen','err');
+    if(btn){btn.disabled=false;btn.textContent='⚡ AI';}
+  }
+}
+
+async function doYTSearch(){
+  const kw=document.getElementById('yt-kw').value.trim();
+  const max=document.getElementById('yt-max').value;
+  const errEl=document.getElementById('search-err');
+  errEl.style.display='none';
+  if(!settings.ytKey){errEl.textContent='YouTube API Key in Settings eintragen';errEl.style.display='block';return;}
+  if(!kw) return;
+
+  const btn=document.getElementById('btn-yt-search');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Suche…';
+  document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Channels werden gesucht…</div>';
+  document.getElementById('search-footer').style.display='none';
+  ytResults=[]; ytSelected=new Set();
+
+  try{
+    const sr=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(kw)}&maxResults=${max}&key=${settings.ytKey}`);
+    const sd=await sr.json();
+    if(sd.error) throw new Error(sd.error.message);
+    if(!sd.items?.length){renderYT([]);btn.disabled=false;btn.textContent='🔍 Search';return;}
+
+    const ids=sd.items.map(i=>i.snippet.channelId).join(',');
+    const cr=await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,brandingSettings&id=${ids}&key=${settings.ytKey}`);
+    const cd=await cr.json();
+    if(cd.error) throw new Error(cd.error.message);
+
+    ytResults=(cd.items||[]).map(ch=>{
+      const subs=parseInt(ch.statistics?.subscriberCount||0);
+      const views=parseInt(ch.statistics?.viewCount||0);
+      const vids=Math.max(1,parseInt(ch.statistics?.videoCount||1));
+      const desc=ch.snippet?.description||'';
+      const email=desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/)?.[0]||'';
+      const handle=ch.snippet?.customUrl||'';
+      return{channelId:ch.id,name:ch.snippet?.title||'',handle,desc,
+        link:`https://youtube.com/${handle||'channel/'+ch.id}`,
+        thumb:ch.snippet?.thumbnails?.default?.url||'',
+        subs:subs+'',avgV:fmtN(Math.round(views/vids)),
+        contact:email,fit:'',fitReason:''};
+    });
+
+    ytSelected=new Set(ytResults.map((_,i)=>i));
+    renderYT(ytResults);
+  }catch(e){
+    errEl.textContent=e.message||'YouTube API Fehler';
+    errEl.style.display='block';
+    document.getElementById('yt-results').innerHTML='';
+  }
+  btn.disabled=false; btn.textContent='🔍 Search';
+}
+
+function renderYT(items){
+  const el=document.getElementById('yt-results');
+  const footer=document.getElementById('search-footer');
+  if(!items.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Keine Channels gefunden</div>';
+    footer.style.display='none'; return;
+  }
+  const allChk=ytSelected.size===items.length;
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--b1);z-index:1">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted)">
+        <input type="checkbox" ${allChk?'checked':''} onchange="toggleAllYT(this)" style="accent-color:var(--acc);width:14px;height:14px">
+        <span id="sel-count">${ytSelected.size} von ${items.length} ausgewählt</span>
+      </label>
+      ${items.some(r=>r.fit)?'<span style="font-size:11px;color:var(--gr);background:var(--gr-bg);padding:2px 9px;border-radius:10px;border:1px solid var(--gr-b)">AI assessed ✓</span>':''}
+    </div>
+    ${items.map((ch,i)=>`
+      <div class="yt-row" style="opacity:${ytSelected.has(i)?1:.4}" onclick="toggleYT(${i})">
+        <input type="checkbox" ${ytSelected.has(i)?'checked':''} onclick="event.stopPropagation();toggleYT(${i})" style="accent-color:var(--acc);width:14px;height:14px;flex-shrink:0">
+        ${ch.thumb?`<img src="${esc(ch.thumb)}" class="yt-thumb">`:'<div class="yt-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:#444">▶</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ch.name)}</div>
+          <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
+            <span>${fmtN(ch.subs)} subs</span>
+            <span>~${ch.avgV} avg views</span>
+            ${ch.contact?`<span style="color:#4a9eff">${esc(ch.contact)}</span>`:''}
+          </div>
+        </div>
+        <div style="flex-shrink:0">${ch.fit?fitTag(ch.fit):''}</div>
+      </div>`).join('')}`;
+
+  footer.style.display='flex';
+  document.getElementById('btn-import').textContent=`${ytSelected.size} Channels importieren`;
+}
+
+function toggleYT(i){
+  ytSelected.has(i)?ytSelected.delete(i):ytSelected.add(i);
+  renderYT(ytResults);
+}
+function toggleAllYT(cb){
+  if(cb.checked) ytResults.forEach((_,i)=>ytSelected.add(i));
+  else ytSelected.clear();
+  renderYT(ytResults);
+}
+
+async function assessAll(){
+  if(!settings.anthropicKey){showToast('Anthropic Key in Settings eintragen','err');return;}
+  const btn=document.getElementById('btn-assess');
+  const st=document.getElementById('assess-st');
+  btn.disabled=true;
+  for(let i=0;i<ytResults.length;i++){
+    st.textContent=`Assessing ${i+1}/${ytResults.length}…`;
+    try{
+      const r=await claudeAssess(ytResults[i]);
+      ytResults[i].fit=r.fit; ytResults[i].fitReason=r.reason;
+    }catch{}
+    await new Promise(res=>setTimeout(res,380));
+  }
+  ytSelected=new Set(ytResults.map((r,i)=>r.fit==='High Fit'?i:-1).filter(i=>i>=0));
+  renderYT(ytResults);
+  st.textContent=`Done — ${ytSelected.size} High Fit ausgewählt`;
+  btn.disabled=false;
+}
+
+function importSelected(){
+  const toAdd=ytResults.filter((_,i)=>ytSelected.has(i)).map(ch=>({
+    id:uid(),date:new Date().toISOString().slice(0,10),
+    name:ch.name,link:ch.link,thumb:ch.thumb,
+    subs:ch.subs,avgV:ch.avgV,contact:ch.contact,
+    desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
+    status:'Not Contacted',method:'',notes:''
+  }));
+  leads=[...toAdd,...leads];
+  save(); render(); closeModal('m-search');
+  showToast(`${toAdd.length} Channels importiert ✓`);
+}
+
+function exportCSV(){
+  const h=['Name','Link','Subs','Avg Views','Kontakt','Fit','Reason','Status','Methode','Notizen'];
+  const rows=leads.map(l=>[l.name,l.link,l.subs,l.avgV,l.contact,l.fit,l.fitReason,l.status,l.method,l.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv=[h.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+let toastT;
+function showToast(msg,type='ok'){
+  clearTimeout(toastT);
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=type==='err'?'var(--rd-bg)':'var(--gr-bg)';
+  el.style.border=`1px solid ${type==='err'?'var(--rd-b)':'var(--gr-b)'}`;
+  el.style.color=type==='err'?'var(--rd)':'var(--gr)';
+  el.style.display='block';
+  toastT=setTimeout(()=>el.style.display='none',3000);
+}
+
+buildFilters();
+render();
+</script>
+</body>
+</html>
