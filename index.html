@@ -1,1 +1,386 @@
 
+import { useState, useEffect } from "react";
+
+const STORAGE_KEY = "uldis-leads-v1";
+
+const STATUS_OPTIONS = ["Not Contacted", "DM Sent", "Email Sent", "Replied", "Call Booked", "Closed", "Not Interested"];
+const METHOD_OPTIONS = ["Instagram DM", "Email", "YouTube Comment", "Twitter/X DM", "LinkedIn"];
+const FIT_COLORS = {
+  "High Fit": { bg: "#1a3a1f", text: "#4ade80", border: "#2d5a35" },
+  "Moderate Fit": { bg: "#3a2e0a", text: "#fbbf24", border: "#5a4a10" },
+  "Low Fit": { bg: "#3a0f0f", text: "#f87171", border: "#5a1f1f" },
+  "": { bg: "#1a1a1a", text: "#888", border: "#2a2a2a" },
+};
+
+const emptyLead = () => ({
+  id: Date.now() + Math.random(),
+  date: new Date().toISOString().slice(0, 10),
+  language: "English",
+  name: "",
+  link: "",
+  subscribers: "",
+  avgViews: "",
+  contact: "",
+  fitAssessment: "",
+  fitReason: "",
+  status: "Not Contacted",
+  outreachMethod: "",
+  notes: "",
+  loading: false,
+});
+
+export default function LeadTracker() {
+  const [leads, setLeads] = useState([]);
+  const [bulkText, setBulkText] = useState("");
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [filterFit, setFilterFit] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [editingCell, setEditingCell] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await window.storage.get(STORAGE_KEY);
+        if (r?.value) setLeads(JSON.parse(r.value));
+      } catch {}
+    })();
+  }, []);
+
+  const save = async (newLeads) => {
+    setLeads(newLeads);
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(newLeads)); } catch {}
+  };
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const addLead = () => {
+    save([...leads, emptyLead()]);
+  };
+
+  const updateLead = (id, field, value) => {
+    save(leads.map(l => l.id === id ? { ...l, [field]: value } : l));
+  };
+
+  const deleteLead = (id) => {
+    save(leads.filter(l => l.id !== id));
+  };
+
+  const assessFit = async (id) => {
+    const lead = leads.find(l => l.id === id);
+    if (!lead.name && !lead.link) return showToast("Add a channel name first", "error");
+    save(leads.map(l => l.id === id ? { ...l, loading: true } : l));
+    try {
+      const prompt = `You are an expert video editor outreach assistant. Analyze this YouTube channel and assess if they need a video editor.
+
+Channel: ${lead.name || lead.link}
+Subscribers: ${lead.subscribers || "unknown"}
+Avg Views/Video: ${lead.avgViews || "unknown"}
+Contact: ${lead.contact || "unknown"}
+Niche: Based on channel name
+
+Assess the fit for hiring a freelance video editor (long-form YouTube specialist).
+
+Respond ONLY with valid JSON like this:
+{"fit":"High Fit","reason":"One sentence explanation max 12 words"}
+
+Fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(c => c.text || "").join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      save(leads.map(l => l.id === id ? {
+        ...l,
+        fitAssessment: parsed.fit || "",
+        fitReason: parsed.reason || "",
+        loading: false
+      } : l));
+      showToast("Fit assessed ✓");
+    } catch {
+      save(leads.map(l => l.id === id ? { ...l, loading: false } : l));
+      showToast("Assessment failed", "error");
+    }
+  };
+
+  const bulkAssess = async () => {
+    if (!bulkText.trim()) return;
+    setBulkLoading(true);
+    try {
+      const prompt = `You are an outreach assistant for a freelance video editor (long-form YouTube specialist in food/travel/lifestyle).
+
+Analyze these YouTube channels and assess if they need a video editor. Here is the raw data:
+
+${bulkText}
+
+For each channel you can identify, return a JSON array. Each object must have:
+- "name": channel name or @handle
+- "subscribers": subscriber count if visible (string)
+- "avgViews": average views if visible (string)  
+- "contact": any email or website mentioned
+- "fit": exactly "High Fit", "Moderate Fit", or "Low Fit"
+- "reason": max 10 words explaining the fit
+
+Respond ONLY with a valid JSON array, no markdown, no explanation.`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(c => c.text || "").join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const newLeads = parsed.map(ch => ({
+        ...emptyLead(),
+        id: Date.now() + Math.random(),
+        name: ch.name || "",
+        link: ch.name?.startsWith("@") ? `youtube.com/${ch.name}` : "",
+        subscribers: ch.subscribers || "",
+        avgViews: ch.avgViews || "",
+        contact: ch.contact || "",
+        fitAssessment: ch.fit || "",
+        fitReason: ch.reason || "",
+      }));
+      save([...leads, ...newLeads]);
+      setBulkText("");
+      setShowBulk(false);
+      showToast(`${newLeads.length} channels imported ✓`);
+    } catch {
+      showToast("Bulk import failed — check format", "error");
+    }
+    setBulkLoading(false);
+  };
+
+  const filtered = leads.filter(l => {
+    if (filterFit !== "All" && l.fitAssessment !== filterFit) return false;
+    if (filterStatus !== "All" && l.status !== filterStatus) return false;
+    return true;
+  });
+
+  const stats = {
+    total: leads.length,
+    high: leads.filter(l => l.fitAssessment === "High Fit").length,
+    contacted: leads.filter(l => l.status !== "Not Contacted" && l.status !== "").length,
+    closed: leads.filter(l => l.status === "Closed").length,
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#080808", color: "#e8e8e8", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { height: 6px; width: 6px; } 
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        input, textarea, select { font-family: inherit; }
+        .cell-input { background: transparent; border: none; color: #e0e0e0; font-size: 13px; width: 100%; outline: none; font-family: inherit; }
+        .cell-input:focus { color: #fff; }
+        .cell-input::placeholder { color: #444; }
+        select.cell-input option { background: #1a1a1a; color: #e0e0e0; }
+        .row-hover:hover { background: rgba(255,255,255,0.025) !important; }
+        .assess-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
+        .assess-btn:hover { background: #222; color: #e8440a; border-color: #e8440a44; }
+        .delete-btn { background: none; border: none; color: #333; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
+        .delete-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+        .filter-btn { background: #111; border: 1px solid #222; color: #888; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .filter-btn.active { background: #1a1a1a; border-color: #e8440a; color: #e8440a; }
+        .filter-btn:hover { border-color: #333; color: #ccc; }
+        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #333; border-top-color: #e8440a; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ borderBottom: "1px solid #161616", padding: "20px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#080808", zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: 20, letterSpacing: "-0.02em" }}>Lead Tracker</div>
+            <div style={{ fontSize: 11, color: "#444", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 1 }}>Uldis Kipens — Outreach System</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowBulk(!showBulk)} style={{ background: "#111", border: "1px solid #222", color: "#aaa", fontSize: 13, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
+            onMouseEnter={e => e.target.style.borderColor = "#e8440a"} onMouseLeave={e => e.target.style.borderColor = "#222"}>
+            ⚡ Bulk Import (AI)
+          </button>
+          <button onClick={addLead} style={{ background: "#e8440a", border: "none", color: "#fff", fontSize: 13, padding: "8px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontWeight: 500, transition: "background 0.2s" }}
+            onMouseEnter={e => e.target.style.background = "#d13d09"} onMouseLeave={e => e.target.style.background = "#e8440a"}>
+            + Add Lead
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: "flex", gap: 1, padding: "0 28px", marginTop: 20, marginBottom: 20 }}>
+        {[
+          { label: "Total Leads", value: stats.total, accent: "#e8e8e8" },
+          { label: "High Fit", value: stats.high, accent: "#4ade80" },
+          { label: "Contacted", value: stats.contacted, accent: "#fbbf24" },
+          { label: "Clients Won", value: stats.closed, accent: "#e8440a" },
+        ].map(s => (
+          <div key={s.label} style={{ flex: 1, padding: "16px 20px", background: "#0e0e0e", border: "1px solid #161616", borderRadius: 0 }}>
+            <div style={{ fontSize: 26, fontFamily: "'Instrument Serif', serif", fontStyle: "italic", color: s.accent, letterSpacing: "-0.03em", lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: "#444", marginTop: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bulk Import Panel */}
+      {showBulk && (
+        <div style={{ margin: "0 28px 20px", background: "#0e0e0e", border: "1px solid #222", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
+            Paste YouTube channel data (names, subscriber counts, links, anything you copied from YouTube search results or the Editing Elite tool):
+          </div>
+          <textarea
+            value={bulkText}
+            onChange={e => setBulkText(e.target.value)}
+            placeholder={"@erickavelaars — 5.65K subs\n@juansmmajourney — 17K subs — sell-deploy.com\n@WifiLevi — 3.69K subs — instagram.com/wifilevi\n..."}
+            style={{ width: "100%", background: "#0a0a0a", border: "1px solid #222", borderRadius: 8, padding: "12px 16px", color: "#ddd", fontSize: 13, minHeight: 120, resize: "vertical", outline: "none", fontFamily: "monospace", lineHeight: 1.6 }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button onClick={bulkAssess} disabled={bulkLoading} style={{ background: "#e8440a", border: "none", color: "#fff", fontSize: 13, padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontWeight: 500, opacity: bulkLoading ? 0.7 : 1 }}>
+              {bulkLoading ? <><span className="spinner" style={{ marginRight: 8, verticalAlign: "middle" }}></span>Analyzing...</> : "⚡ Analyze & Import with AI"}
+            </button>
+            <button onClick={() => setShowBulk(false)} style={{ background: "#111", border: "1px solid #222", color: "#888", fontSize: 13, padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div style={{ padding: "0 28px 16px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: "#444", marginRight: 4, textTransform: "uppercase", letterSpacing: "0.1em" }}>Filter:</span>
+        {["All", "High Fit", "Moderate Fit", "Low Fit"].map(f => (
+          <button key={f} className={`filter-btn${filterFit === f ? " active" : ""}`} onClick={() => setFilterFit(f)}>{f}</button>
+        ))}
+        <div style={{ width: 1, height: 16, background: "#222", margin: "0 4px" }} />
+        {["All", ...STATUS_OPTIONS.slice(0, 4)].map(s => (
+          <button key={s} className={`filter-btn${filterStatus === s ? " active" : ""}`} onClick={() => setFilterStatus(s)}>{s}</button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{ overflowX: "auto", padding: "0 28px 40px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+              {["Date", "Lang", "Channel", "Subs", "Avg Views", "Contact", "Fit Assessment", "Status", "Method", "Notes", "AI", ""].map(h => (
+                <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, color: "#444", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={12} style={{ padding: "60px 12px", textAlign: "center", color: "#333", fontSize: 14 }}>
+                  No leads yet — add one or use Bulk Import ⚡
+                </td>
+              </tr>
+            )}
+            {filtered.map((lead, i) => {
+              const fitStyle = FIT_COLORS[lead.fitAssessment] || FIT_COLORS[""];
+              return (
+                <tr key={lead.id} className="row-hover" style={{ borderBottom: "1px solid #111", background: i % 2 === 0 ? "#0a0a0a" : "#080808" }}>
+                  {/* Date */}
+                  <td style={{ padding: "10px 12px", minWidth: 100 }}>
+                    <input className="cell-input" type="date" value={lead.date} onChange={e => updateLead(lead.id, "date", e.target.value)} style={{ fontSize: 12 }} />
+                  </td>
+                  {/* Language */}
+                  <td style={{ padding: "10px 12px", minWidth: 80 }}>
+                    <select className="cell-input" value={lead.language} onChange={e => updateLead(lead.id, "language", e.target.value)}>
+                      {["English", "German", "Spanish", "French", "Other"].map(l => <option key={l}>{l}</option>)}
+                    </select>
+                  </td>
+                  {/* Channel Name + Link */}
+                  <td style={{ padding: "10px 12px", minWidth: 180 }}>
+                    <input className="cell-input" value={lead.name} onChange={e => updateLead(lead.id, "name", e.target.value)} placeholder="@channelname" style={{ fontWeight: 500, color: "#a0c4ff", marginBottom: 2 }} />
+                    <input className="cell-input" value={lead.link} onChange={e => updateLead(lead.id, "link", e.target.value)} placeholder="youtube.com/..." style={{ fontSize: 11, color: "#555" }} />
+                  </td>
+                  {/* Subscribers */}
+                  <td style={{ padding: "10px 12px", minWidth: 80 }}>
+                    <input className="cell-input" value={lead.subscribers} onChange={e => updateLead(lead.id, "subscribers", e.target.value)} placeholder="5.6K" />
+                  </td>
+                  {/* Avg Views */}
+                  <td style={{ padding: "10px 12px", minWidth: 90 }}>
+                    <input className="cell-input" value={lead.avgViews} onChange={e => updateLead(lead.id, "avgViews", e.target.value)} placeholder="1K–4K" />
+                  </td>
+                  {/* Contact */}
+                  <td style={{ padding: "10px 12px", minWidth: 160 }}>
+                    <input className="cell-input" value={lead.contact} onChange={e => updateLead(lead.id, "contact", e.target.value)} placeholder="email or website" style={{ fontSize: 12 }} />
+                  </td>
+                  {/* Fit Assessment */}
+                  <td style={{ padding: "10px 12px", minWidth: 200 }}>
+                    {lead.fitAssessment ? (
+                      <div>
+                        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500, background: fitStyle.bg, color: fitStyle.text, border: `1px solid ${fitStyle.border}`, marginBottom: 4 }}>
+                          {lead.fitAssessment}
+                        </span>
+                        {lead.fitReason && <div style={{ fontSize: 11, color: "#555", lineHeight: 1.4 }}>{lead.fitReason}</div>}
+                      </div>
+                    ) : (
+                      <span style={{ color: "#333", fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                  {/* Status */}
+                  <td style={{ padding: "10px 12px", minWidth: 130 }}>
+                    <select className="cell-input" value={lead.status} onChange={e => updateLead(lead.id, "status", e.target.value)}
+                      style={{ color: lead.status === "Closed" ? "#4ade80" : lead.status === "Replied" ? "#fbbf24" : "#aaa" }}>
+                      {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  {/* Outreach Method */}
+                  <td style={{ padding: "10px 12px", minWidth: 130 }}>
+                    <select className="cell-input" value={lead.outreachMethod} onChange={e => updateLead(lead.id, "outreachMethod", e.target.value)}>
+                      <option value="">Select...</option>
+                      {METHOD_OPTIONS.map(m => <option key={m}>{m}</option>)}
+                    </select>
+                  </td>
+                  {/* Notes */}
+                  <td style={{ padding: "10px 12px", minWidth: 180 }}>
+                    <input className="cell-input" value={lead.notes} onChange={e => updateLead(lead.id, "notes", e.target.value)} placeholder="Notes..." />
+                  </td>
+                  {/* AI Button */}
+                  <td style={{ padding: "10px 12px" }}>
+                    <button className="assess-btn" onClick={() => assessFit(lead.id)} disabled={lead.loading}>
+                      {lead.loading ? <span className="spinner"></span> : "AI Assess"}
+                    </button>
+                  </td>
+                  {/* Delete */}
+                  <td style={{ padding: "10px 4px" }}>
+                    <button className="delete-btn" onClick={() => deleteLead(lead.id)}>×</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="toast" style={{ background: toast.type === "error" ? "#3a0f0f" : "#0f2a14", border: `1px solid ${toast.type === "error" ? "#5a1f1f" : "#1a4a24"}`, color: toast.type === "error" ? "#f87171" : "#4ade80" }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
