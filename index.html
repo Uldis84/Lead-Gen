@@ -359,11 +359,23 @@ function saveSettings(){
 }
 
 async function claudeAssess(ch){
-  const prompt=`You are a video editor outreach specialist. The editor specializes in long-form YouTube (food, travel, lifestyle).
-Channel: ${ch.name}, Subs: ${fmtN(ch.subs)}, Avg Views: ${ch.avgV||'unknown'}, Contact: ${ch.contact||'none'}, Description: ${(ch.desc||'').slice(0,150)}
-Is this a good fit for a freelance video editor? Ideal: 5K–300K subs, food/travel/lifestyle niche, consistent uploads.
-Reply ONLY with raw JSON (no markdown, no explanation): {"fit":"High Fit","reason":"Under 12 words"}
-fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
+  const prompt=`You are a video editor outreach assistant. Be GENEROUS with High Fit ratings.
+
+Channel: ${ch.name}
+Subscribers: ${fmtN(ch.subs)}
+Avg Views: ${ch.avgV||'unknown'}
+Contact: ${ch.contact||'none'}
+Description: ${(ch.desc||'').slice(0,200)}
+
+RATING RULES - follow strictly:
+- "High Fit" = ANY creator with 1K–500K subs who makes videos regularly. When in doubt, give High Fit.
+- "Moderate Fit" = very large channels (500K+) who likely have an in-house team, OR channels that are clearly inactive
+- "Low Fit" = ONLY if channel is completely dead (no uploads in 1+ year) or is a huge corporation/brand
+
+Most small-to-medium YouTubers need editing help. Be optimistic.
+
+Reply ONLY with raw JSON: {"fit":"High Fit","reason":"max 10 words"}
+fit must be exactly one of: "High Fit", "Moderate Fit", "Low Fit"`;
   const r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':settings.anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
