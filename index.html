@@ -359,7 +359,7 @@ function saveSettings(){
 }
 
 async function claudeAssess(ch){
-  const prompt=`You are a video editor outreach assistant. Be GENEROUS with High Fit ratings.
+ const prompt=`You are a video editor outreach specialist. The editor specializes in long-form YouTube (food, travel, lifestyle).
 
 Channel: ${ch.name}
 Subscribers: ${fmtN(ch.subs)}
@@ -367,12 +367,16 @@ Avg Views: ${ch.avgV||'unknown'}
 Contact: ${ch.contact||'none'}
 Description: ${(ch.desc||'').slice(0,200)}
 
-RATING RULES - follow strictly:
-- "High Fit" = ANY creator with 1K–500K subs who makes videos regularly. When in doubt, give High Fit.
-- "Moderate Fit" = very large channels (500K+) who likely have an in-house team, OR channels that are clearly inactive
-- "Low Fit" = ONLY if channel is completely dead (no uploads in 1+ year) or is a huge corporation/brand
+GEOGRAPHIC FILTER — this is the most important rule:
+- ONLY consider channels from: USA, UK, Germany, Austria, Switzerland, Netherlands, Canada, Australia, France, Scandinavia, or other Western/Northern European countries
+- Immediately give "Low Fit" to any channel that appears to be based in: India, Pakistan, Bangladesh, Thailand, Philippines, Indonesia, Vietnam, Nigeria, or any other developing country
+- If the language is Hindi, Tamil, Tagalog, Thai, Bengali, or similar — automatically "Low Fit"
+- If unsure about location, check the channel name, description language, and contact info for clues
 
-Most small-to-medium YouTubers need editing help. Be optimistic.
+RATING RULES (only apply if channel passes geographic filter):
+- "High Fit" = 5K–500K subs, food/travel/lifestyle niche, appears active, based in target countries
+- "Moderate Fit" = right location but wrong niche, or very large (500K+), or unclear upload frequency
+- "Low Fit" = wrong country, inactive channel, or huge corporation
 
 Reply ONLY with raw JSON: {"fit":"High Fit","reason":"max 10 words"}
 fit must be exactly one of: "High Fit", "Moderate Fit", "Low Fit"`;
