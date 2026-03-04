@@ -367,19 +367,34 @@ Avg Views: ${ch.avgV||'unknown'}
 Contact: ${ch.contact||'none'}
 Description: ${(ch.desc||'').slice(0,200)}
 
-GEOGRAPHIC FILTER — this is the most important rule:
-- ONLY consider channels from: USA, UK, Germany, Austria, Switzerland, Netherlands, Canada, Australia, France, Scandinavia, or other Western/Northern European countries
-- Immediately give "Low Fit" to any channel that appears to be based in: India, Pakistan, Bangladesh, Thailand, Philippines, Indonesia, Vietnam, Nigeria, or any other developing country
-- If the language is Hindi, Tamil, Tagalog, Thai, Bengali, or similar — automatically "Low Fit"
-- If unsure about location, check the channel name, description language, and contact info for clues
+const prompt=`You are a video editor outreach specialist.
 
-RATING RULES (only apply if channel passes geographic filter):
-- "High Fit" = 5K–500K subs, food/travel/lifestyle niche, appears active, based in target countries
-- "Moderate Fit" = right location but wrong niche, or very large (500K+), or unclear upload frequency
-- "Low Fit" = wrong country, inactive channel, or huge corporation
+Channel: ${ch.name}
+Subscribers: ${fmtN(ch.subs)}
+Avg Views: ${ch.avgV||'unknown'}
+Contact: ${ch.contact||'none'}
+Description: ${(ch.desc||'').slice(0,200)}
+
+RULE 1 — LOCATION (highest priority, overrides everything):
+Automatically "Low Fit" if ANY of these are true:
+- Indian names: Raj, Rahul, Amit, Priya, Singh, Kumar, Sharma, Patel, Gupta, Arjun, Vikram, Deepak, Ankit, Ravi, Suresh, Arun, Sanjay, Rohit, Neha, Pooja, Sunita, or similar
+- Channel description contains Hindi, Tamil, Telugu, Bengali words
+- Contact email ends in .in
+- Description mentions India, Mumbai, Delhi, Bangalore, Chennai, Hyderabad
+- Thai names or mentions of Thailand, Bangkok
+- Filipino names or mentions of Philippines
+- Indonesian, Pakistani, Bangladeshi, Vietnamese or Nigerian indicators
+- Any non-English/German/French/Spanish/Dutch/Scandinavian language in description
+
+RULE 2 — RATING (only if passed Rule 1):
+- "High Fit" = 5K–500K subs, food/travel/lifestyle, active, Western/Northern Europe or USA/UK/Canada/Australia
+- "Moderate Fit" = right location but wrong niche or too big
+- "Low Fit" = wrong location, inactive, or corporate brand
+
+When in doubt about location → always "Low Fit".
 
 Reply ONLY with raw JSON: {"fit":"High Fit","reason":"max 10 words"}
-fit must be exactly one of: "High Fit", "Moderate Fit", "Low Fit"`;
+fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
   const r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':settings.anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
