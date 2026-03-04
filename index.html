@@ -91,8 +91,8 @@ td{border-bottom:1px solid var(--b1)}
     <button class="tab-btn" id="tb-guide" onclick="switchTab('guide')">Setup Guide</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <span id="warn-bar" class="warn-bar">⚠ API Keys fehlen</span>
-    <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="openModal('m-settings')">⚙ Settings</button>
+    <span id="warn-bar" class="warn-bar">&#9888; API Keys fehlen</span>
+    <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="openModal('m-settings')">&#9881; Settings</button>
   </div>
 </nav>
 
@@ -117,9 +117,9 @@ td{border-bottom:1px solid var(--b1)}
     </div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <button class="btn btn-p" onclick="openModal('m-search')">🔍 YouTube Search</button>
+    <button class="btn btn-p" onclick="openModal('m-search')">&#128269; YouTube Search</button>
     <button class="btn btn-s" onclick="addLead()">+ Manuell</button>
-    <button class="btn btn-g" onclick="exportCSV()">↓ CSV Export</button>
+    <button class="btn btn-g" onclick="exportCSV()">&#8595; CSV Export</button>
     <div style="flex:1"></div>
     <div id="fit-filters" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
@@ -149,9 +149,9 @@ td{border-bottom:1px solid var(--b1)}
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">YouTube API Key holen (kostenlos)</div>
       <div class="guide-step">1. Gehe zu <a href="https://console.cloud.google.com" target="_blank" style="color:#4a9eff">console.cloud.google.com</a></div>
       <div class="guide-step">2. Neues Projekt erstellen</div>
-      <div class="guide-step">3. "APIs & Services" → "Bibliothek" → "YouTube Data API v3" → Aktivieren</div>
-      <div class="guide-step">4. "Anmeldedaten erstellen" → "API-Schlüssel" → Key kopieren</div>
-      <div class="guide-step">5. Key in ⚙ Settings einfügen</div>
+      <div class="guide-step">3. "APIs & Services" &rarr; "Bibliothek" &rarr; "YouTube Data API v3" &rarr; Aktivieren</div>
+      <div class="guide-step">4. "Anmeldedaten erstellen" &rarr; "API-Schlüssel" &rarr; Key kopieren</div>
+      <div class="guide-step">5. Key in &#9881; Settings einfügen</div>
       <div class="guide-note">Kostenlos: 10.000 Requests/Tag</div>
     </div>
   </div>
@@ -160,9 +160,9 @@ td{border-bottom:1px solid var(--b1)}
     <div>
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">Anthropic API Key (für AI Assessment)</div>
       <div class="guide-step">1. Gehe zu <a href="https://console.anthropic.com" target="_blank" style="color:#4a9eff">console.anthropic.com</a></div>
-      <div class="guide-step">2. "API Keys" → "Create Key" → Key kopieren</div>
-      <div class="guide-step">3. Key in ⚙ Settings einfügen</div>
-      <div class="guide-note">~$0.003 pro Assessment — 1000 Channels ≈ $3</div>
+      <div class="guide-step">2. "API Keys" &rarr; "Create Key" &rarr; Key kopieren</div>
+      <div class="guide-step">3. Key in &#9881; Settings einfügen</div>
+      <div class="guide-note">~$0.003 pro Assessment — 1000 Channels ca. $3</div>
     </div>
   </div>
   <div class="guide-card">
@@ -170,8 +170,8 @@ td{border-bottom:1px solid var(--b1)}
     <div>
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">Auf GitHub Pages deployen</div>
       <div class="guide-step">1. Diese Datei als <strong>index.html</strong> speichern</div>
-      <div class="guide-step">2. Neues GitHub Repo erstellen → index.html hochladen</div>
-      <div class="guide-step">3. Settings → Pages → Source: main → Save</div>
+      <div class="guide-step">2. Neues GitHub Repo erstellen &rarr; index.html hochladen</div>
+      <div class="guide-step">3. Settings &rarr; Pages &rarr; Source: main &rarr; Save</div>
       <div class="guide-step">4. URL: <strong>dein-name.github.io/lead-tracker</strong></div>
       <div class="guide-note">Leads werden lokal in deinem Browser gespeichert</div>
     </div>
@@ -180,10 +180,10 @@ td{border-bottom:1px solid var(--b1)}
     <div class="guide-num">4</div>
     <div>
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">Workflow</div>
-      <div class="guide-step">1. 🔍 YouTube Search → Keyword: "food london vlog", "travel creator"</div>
-      <div class="guide-step">2. 20–50 Channels automatisch mit Subs + Kontakt</div>
-      <div class="guide-step">3. ⚡ AI Assess All → High / Moderate / Low Fit</div>
-      <div class="guide-step">4. High Fits importieren → DMs schreiben → Status tracken</div>
+      <div class="guide-step">1. YouTube Search &rarr; Keyword: "food london vlog", "travel creator"</div>
+      <div class="guide-step">2. 20-50 Channels automatisch mit Subs + Kontakt</div>
+      <div class="guide-step">3. AI Assess All &rarr; High / Moderate / Low Fit</div>
+      <div class="guide-step">4. High Fits importieren &rarr; DMs schreiben &rarr; Status tracken</div>
     </div>
   </div>
 </div>
@@ -196,15 +196,15 @@ td{border-bottom:1px solid var(--b1)}
     <div class="frow">
       <label class="flabel">YouTube Data API v3 Key</label>
       <input type="password" id="inp-yt" placeholder="AIza...">
-      <div class="ftip">Kostenlos bei <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → YouTube Data API v3 → Anmeldedaten</div>
+      <div class="ftip">Kostenlos bei <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></div>
     </div>
     <div class="frow">
       <label class="flabel">Anthropic API Key</label>
       <input type="password" id="inp-ai" placeholder="sk-ant-...">
-      <div class="ftip">Bei <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key</div>
+      <div class="ftip">Bei <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> &rarr; API Keys &rarr; Create Key</div>
     </div>
     <div style="background:#0a0a0a;border:1px solid var(--b1);border-radius:9px;padding:11px 13px;margin-bottom:20px;font-size:11px;color:#444;line-height:1.6">
-      🔒 Keys werden nur lokal in deinem Browser gespeichert.
+      Keys werden nur lokal in deinem Browser gespeichert.
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-p" onclick="saveSettings()">Speichern</button>
@@ -220,14 +220,14 @@ td{border-bottom:1px solid var(--b1)}
       <div class="eyebrow">YouTube Search</div>
       <div class="section-h">Channels automatisch finden</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="search" id="yt-kw" placeholder='"food london vlog", "travel creator", "smma coach"' style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
+        <input type="search" id="yt-kw" placeholder="food london vlog, travel creator, smma coach" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
         <select id="yt-max" style="width:110px">
           <option value="10">10 results</option>
           <option value="20" selected>20 results</option>
           <option value="30">30 results</option>
           <option value="50">50 results</option>
         </select>
-        <button class="btn btn-p" id="btn-yt-search" onclick="doYTSearch()">🔍 Search</button>
+        <button class="btn btn-p" id="btn-yt-search" onclick="doYTSearch()">&#128269; Search</button>
       </div>
       <div id="search-err" class="err-bar"></div>
     </div>
@@ -236,10 +236,10 @@ td{border-bottom:1px solid var(--b1)}
     </div>
     <div id="search-footer" style="display:none;padding:14px 24px;border-top:1px solid var(--b1);gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-p" id="btn-import" onclick="importSelected()">Importieren</button>
-      <button class="btn btn-g" id="btn-assess" onclick="assessAll()">⚡ AI Assess All</button>
+      <button class="btn btn-g" id="btn-assess" onclick="assessAll()">&#9889; AI Assess All</button>
       <span id="assess-st" style="font-size:12px;color:var(--muted)"></span>
       <div style="flex:1"></div>
-      <button class="btn btn-g" onclick="closeModal('m-search')">Schließen</button>
+      <button class="btn btn-g" onclick="closeModal('m-search')">Schliessen</button>
     </div>
   </div>
 </div>
@@ -247,19 +247,19 @@ td{border-bottom:1px solid var(--b1)}
 <div id="toast" class="toast"></div>
 
 <script>
-let leads    = JSON.parse(localStorage.getItem('uldis-leads-v3') || '[]');
-let settings = JSON.parse(localStorage.getItem('uldis-keys-v1')  || '{}');
-let ytResults = [], ytSelected = new Set(), filterFit = 'All';
+var leads    = JSON.parse(localStorage.getItem('uldis-leads-v3') || '[]');
+var settings = JSON.parse(localStorage.getItem('uldis-keys-v1')  || '{}');
+var ytResults = [], ytSelected = new Set(), filterFit = 'All';
 
-const STATUS = ['Not Contacted','DM Sent','Email Sent','Replied','Call Booked','Closed','Not Interested'];
-const METHOD = ['—','Instagram DM','Email','YouTube Comment','Twitter/X DM','LinkedIn'];
-const FITS   = ['All','High Fit','Moderate Fit','Low Fit'];
+var STATUS = ['Not Contacted','DM Sent','Email Sent','Replied','Call Booked','Closed','Not Interested'];
+var METHOD = ['--','Instagram DM','Email','YouTube Comment','Twitter/X DM','LinkedIn'];
+var FITS   = ['All','High Fit','Moderate Fit','Low Fit'];
 
 function save(){ localStorage.setItem('uldis-leads-v3', JSON.stringify(leads)); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function fmtN(n){
-  const x=parseInt(n); if(!n||isNaN(x)) return n||'—';
+  var x=parseInt(n); if(!n||isNaN(x)) return n||'--';
   return x>=1e6?(x/1e6).toFixed(1)+'M':x>=1e3?(x/1e3).toFixed(1)+'K':x+'';
 }
 function fitTag(f){
@@ -286,221 +286,247 @@ function openModal(id){
 function closeModal(id){ document.getElementById(id).style.display='none'; }
 
 function buildFilters(){
-  document.getElementById('fit-filters').innerHTML = FITS.map(f=>
-    `<button class="filter-pill${filterFit===f?' on':''}" onclick="setFit('${f}')">${f}</button>`
-  ).join('');
+  document.getElementById('fit-filters').innerHTML = FITS.map(function(f){
+    return '<button class="filter-pill'+(filterFit===f?' on':'')+'" onclick="setFit(\''+f+'\')">'+f+'</button>';
+  }).join('');
 }
 function setFit(f){ filterFit=f; buildFilters(); render(); }
 
 function updateStats(){
   document.getElementById('s-total').textContent = leads.length;
-  document.getElementById('s-high').textContent  = leads.filter(l=>l.fit==='High Fit').length;
-  document.getElementById('s-cont').textContent  = leads.filter(l=>l.status&&l.status!=='Not Contacted').length;
-  document.getElementById('s-won').textContent   = leads.filter(l=>l.status==='Closed').length;
+  document.getElementById('s-high').textContent  = leads.filter(function(l){return l.fit==='High Fit';}).length;
+  document.getElementById('s-cont').textContent  = leads.filter(function(l){return l.status&&l.status!=='Not Contacted';}).length;
+  document.getElementById('s-won').textContent   = leads.filter(function(l){return l.status==='Closed';}).length;
   document.getElementById('warn-bar').style.display = (!settings.ytKey&&!settings.anthropicKey)?'inline-flex':'none';
 }
 
 function render(){
   updateStats();
-  const tbody = document.getElementById('leads-tbody');
-  const vis = leads.filter(l=>filterFit==='All'||l.fit===filterFit);
+  var tbody = document.getElementById('leads-tbody');
+  var vis = leads.filter(function(l){ return filterFit==='All'||l.fit===filterFit; });
   if(!vis.length){
-    tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads — YouTube durchsuchen oder manuell hinzufügen</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads -- YouTube durchsuchen oder manuell hinzufuegen</td></tr>';
     return;
   }
-  tbody.innerHTML = vis.map(l=>`
-    <tr class="trow">
-      <td style="min-width:200px">
-        <div style="display:flex;align-items:center;gap:9px;padding:4px 12px">
-          ${l.thumb?`<img src="${esc(l.thumb)}" class="yt-thumb" style="width:28px;height:28px">`:
-            '<div style="width:28px;height:28px;border-radius:50%;background:#1a1a1a;flex-shrink:0"></div>'}
-          <div style="min-width:0;flex:1">
-            <input class="ci" style="font-weight:500;color:#a8c8ff;padding:3px 0" value="${esc(l.name)}" placeholder="Channel name" onchange="upd('${l.id}','name',this.value)">
-            <input class="ci ci-sm" style="padding:2px 0" value="${esc(l.link)}" placeholder="youtube.com/..." onchange="upd('${l.id}','link',this.value)">
-          </div>
-        </div>
-      </td>
-      <td style="min-width:70px"><input class="ci ci-sm" value="${esc(l.subs)}" placeholder="5.6K" onchange="upd('${l.id}','subs',this.value)"></td>
-      <td style="min-width:80px"><input class="ci ci-sm" value="${esc(l.avgV)}" placeholder="1K–4K" onchange="upd('${l.id}','avgV',this.value)"></td>
-      <td style="min-width:160px"><input class="ci" style="font-size:12px;color:#4a9eff" value="${esc(l.contact)}" placeholder="email / link" onchange="upd('${l.id}','contact',this.value)"></td>
-      <td style="min-width:200px;padding:10px 12px">
-        ${l.fit?`<div>${fitTag(l.fit)}${l.fitReason?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${esc(l.fitReason)}</div>`:''}</div>`:'<span style="color:var(--subtle);font-size:12px">—</span>'}
-      </td>
-      <td style="min-width:130px">
-        <select class="ci-sel" style="color:${l.status==='Closed'?'var(--gr)':l.status==='Replied'||l.status==='Call Booked'?'var(--yw)':'var(--muted)'}" onchange="upd('${l.id}','status',this.value)">
-          ${STATUS.map(s=>`<option${l.status===s?' selected':''}>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td style="min-width:130px">
-        <select class="ci-sel" onchange="upd('${l.id}','method',this.value)">
-          ${METHOD.map(m=>`<option${l.method===m?' selected':''}>${m}</option>`).join('')}
-        </select>
-      </td>
-      <td style="min-width:160px"><input class="ci" style="font-size:12px" value="${esc(l.notes)}" placeholder="Notizen…" onchange="upd('${l.id}','notes',this.value)"></td>
-      <td style="padding:10px 8px"><button class="ai-btn" id="ai-${l.id}" onclick="assessOne('${l.id}')">⚡ AI</button></td>
-      <td style="padding:10px 4px"><button class="del-btn" onclick="delLead('${l.id}')">×</button></td>
-    </tr>`).join('');
+  tbody.innerHTML = vis.map(function(l){
+    var statusColor = l.status==='Closed'?'var(--gr)':l.status==='Replied'||l.status==='Call Booked'?'var(--yw)':'var(--muted)';
+    var thumb = l.thumb
+      ? '<img src="'+esc(l.thumb)+'" class="yt-thumb" style="width:28px;height:28px">'
+      : '<div style="width:28px;height:28px;border-radius:50%;background:#1a1a1a;flex-shrink:0"></div>';
+    var fitCell = l.fit
+      ? '<div>'+fitTag(l.fit)+(l.fitReason?'<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">'+esc(l.fitReason)+'</div>':'')+'</div>'
+      : '<span style="color:var(--subtle);font-size:12px">--</span>';
+    var statusOpts = STATUS.map(function(s){ return '<option'+(l.status===s?' selected':'')+'>'+s+'</option>'; }).join('');
+    var methodOpts = METHOD.map(function(m){ return '<option'+(l.method===m?' selected':'')+'>'+m+'</option>'; }).join('');
+    return '<tr class="trow">'
+      +'<td style="min-width:200px"><div style="display:flex;align-items:center;gap:9px;padding:4px 12px">'+thumb
+      +'<div style="min-width:0;flex:1">'
+      +'<input class="ci" style="font-weight:500;color:#a8c8ff;padding:3px 0" value="'+esc(l.name)+'" placeholder="Channel name" onchange="upd(\''+l.id+'\',\'name\',this.value)">'
+      +'<input class="ci ci-sm" style="padding:2px 0" value="'+esc(l.link)+'" placeholder="youtube.com/..." onchange="upd(\''+l.id+'\',\'link\',this.value)">'
+      +'</div></div></td>'
+      +'<td style="min-width:70px"><input class="ci ci-sm" value="'+esc(l.subs)+'" placeholder="5.6K" onchange="upd(\''+l.id+'\',\'subs\',this.value)"></td>'
+      +'<td style="min-width:80px"><input class="ci ci-sm" value="'+esc(l.avgV)+'" placeholder="1K-4K" onchange="upd(\''+l.id+'\',\'avgV\',this.value)"></td>'
+      +'<td style="min-width:160px"><input class="ci" style="font-size:12px;color:#4a9eff" value="'+esc(l.contact)+'" placeholder="email / link" onchange="upd(\''+l.id+'\',\'contact\',this.value)"></td>'
+      +'<td style="min-width:200px;padding:10px 12px">'+fitCell+'</td>'
+      +'<td style="min-width:130px"><select class="ci-sel" style="color:'+statusColor+'" onchange="upd(\''+l.id+'\',\'status\',this.value)">'+statusOpts+'</select></td>'
+      +'<td style="min-width:130px"><select class="ci-sel" onchange="upd(\''+l.id+'\',\'method\',this.value)">'+methodOpts+'</select></td>'
+      +'<td style="min-width:160px"><input class="ci" style="font-size:12px" value="'+esc(l.notes)+'" placeholder="Notizen..." onchange="upd(\''+l.id+'\',\'notes\',this.value)"></td>'
+      +'<td style="padding:10px 8px"><button class="ai-btn" id="ai-'+l.id+'" onclick="assessOne(\''+l.id+'\')">AI</button></td>'
+      +'<td style="padding:10px 4px"><button class="del-btn" onclick="delLead(\''+l.id+'\')">x</button></td>'
+      +'</tr>';
+  }).join('');
 }
 
-function upd(id,f,v){ const l=leads.find(x=>x.id===id); if(l){l[f]=v;save();updateStats();} }
+function upd(id,f,v){ var l=leads.find(function(x){return x.id===id;}); if(l){l[f]=v;save();updateStats();} }
 function addLead(){
   leads.unshift({id:uid(),date:new Date().toISOString().slice(0,10),name:'',link:'',thumb:'',subs:'',avgV:'',contact:'',fit:'',fitReason:'',status:'Not Contacted',method:'',notes:''});
   save(); render();
 }
-function delLead(id){ leads=leads.filter(l=>l.id!==id); save(); render(); }
+function delLead(id){ leads=leads.filter(function(l){return l.id!==id;}); save(); render(); }
 
 function saveSettings(){
   settings.ytKey        = document.getElementById('inp-yt').value.trim();
   settings.anthropicKey = document.getElementById('inp-ai').value.trim();
   localStorage.setItem('uldis-keys-v1', JSON.stringify(settings));
   closeModal('m-settings');
-  showToast('Keys gespeichert ✓');
+  showToast('Keys gespeichert');
   updateStats();
 }
 
+// GEO FILTER — runs before AI call
+function isBlockedRegion(name, desc, contact){
+  var text = (name + ' ' + desc + ' ' + contact).toLowerCase();
+  var blockedWords = ['india','mumbai','delhi','bangalore','chennai','hyderabad','kolkata','pune',
+    'pakistan','bangladesh','nepal','srilanka','sri lanka',
+    'thailand','bangkok','philippines','manila','indonesia','jakarta',
+    'nigeria','lagos','vietnam','hanoi','kenya','cameroon'];
+  var blockedNames = ['raj','rahul','amit','priya','singh','kumar','sharma','patel','gupta',
+    'arjun','vikram','deepak','ankit','ravi','suresh','arun','sanjay','rohit','neha','pooja',
+    'sunita','abhishek','akash','yuvraj','ishaan','aarav'];
+  for(var i=0;i<blockedWords.length;i++){
+    if(text.indexOf(blockedWords[i])!==-1) return true;
+  }
+  var nameLower = name.toLowerCase();
+  for(var j=0;j<blockedNames.length;j++){
+    var re = new RegExp('\\b'+blockedNames[j]+'\\b');
+    if(re.test(nameLower)) return true;
+  }
+  if((contact||'').toLowerCase().endsWith('.in')) return true;
+  return false;
+}
+
 async function claudeAssess(ch){
- const prompt=`You are a video editor outreach specialist. The editor specializes in long-form YouTube (food, travel, lifestyle).
+  var name    = ch.name    || '';
+  var desc    = (ch.desc   || '').slice(0,200);
+  var contact = ch.contact || '';
+  var avgV    = ch.avgV    || 'unknown';
+  var subs    = fmtN(ch.subs);
 
-Channel: ${ch.name}
-Subscribers: ${fmtN(ch.subs)}
-Avg Views: ${ch.avgV||'unknown'}
-Contact: ${ch.contact||'none'}
-Description: ${(ch.desc||'').slice(0,200)}
+  var blocked = isBlockedRegion(name, desc, contact);
 
-const prompt=`You are a video editor outreach specialist.
+  var geoNote = blocked
+    ? 'IMPORTANT: This channel is from a blocked region (Asia/Africa/developing market). You MUST rate it as Low Fit regardless of anything else.'
+    : 'Target regions: USA, UK, Germany, Austria, Switzerland, Netherlands, Canada, Australia, France, Scandinavia, other Western Europe. Only give High Fit to channels clearly from these regions.';
 
-Channel: ${ch.name}
-Subscribers: ${fmtN(ch.subs)}
-Avg Views: ${ch.avgV||'unknown'}
-Contact: ${ch.contact||'none'}
-Description: ${(ch.desc||'').slice(0,200)}
+  var ratingNote = blocked
+    ? ''
+    : 'High Fit: 5K-500K subs, food/travel/lifestyle niche, active, Western/English-speaking country. Moderate Fit: right region but wrong niche or too large. Low Fit: wrong region, inactive, or big corporate brand.';
 
-RULE 1 — LOCATION (highest priority, overrides everything):
-Automatically "Low Fit" if ANY of these are true:
-- Indian names: Raj, Rahul, Amit, Priya, Singh, Kumar, Sharma, Patel, Gupta, Arjun, Vikram, Deepak, Ankit, Ravi, Suresh, Arun, Sanjay, Rohit, Neha, Pooja, Sunita, or similar
-- Channel description contains Hindi, Tamil, Telugu, Bengali words
-- Contact email ends in .in
-- Description mentions India, Mumbai, Delhi, Bangalore, Chennai, Hyderabad
-- Thai names or mentions of Thailand, Bangkok
-- Filipino names or mentions of Philippines
-- Indonesian, Pakistani, Bangladeshi, Vietnamese or Nigerian indicators
-- Any non-English/German/French/Spanish/Dutch/Scandinavian language in description
+  var prompt = 'You are a video editor outreach specialist.\n'
+    + 'Channel: ' + name + '\n'
+    + 'Subs: ' + subs + '\n'
+    + 'Avg Views: ' + avgV + '\n'
+    + 'Contact: ' + (contact || 'none') + '\n'
+    + 'Description: ' + desc + '\n\n'
+    + geoNote + '\n'
+    + ratingNote + '\n\n'
+    + 'Reply ONLY with raw JSON, no markdown, no explanation:\n'
+    + '{"fit":"High Fit","reason":"max 10 words"}\n'
+    + 'fit must be exactly one of: "High Fit", "Moderate Fit", "Low Fit"';
 
-RULE 2 — RATING (only if passed Rule 1):
-- "High Fit" = 5K–500K subs, food/travel/lifestyle, active, Western/Northern Europe or USA/UK/Canada/Australia
-- "Moderate Fit" = right location but wrong niche or too big
-- "Low Fit" = wrong location, inactive, or corporate brand
-
-When in doubt about location → always "Low Fit".
-
-Reply ONLY with raw JSON: {"fit":"High Fit","reason":"max 10 words"}
-fit must be exactly: "High Fit", "Moderate Fit", or "Low Fit"`;
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
+  var r = await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':settings.anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:120,messages:[{role:'user',content:prompt}]})
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':settings.anthropicKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:120,
+      messages:[{role:'user',content:prompt}]
+    })
   });
-  if(!r.ok) throw new Error('Claude API '+r.status);
-  const d=await r.json();
-  return JSON.parse((d.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+  if(!r.ok) throw new Error('Claude API ' + r.status);
+  var d = await r.json();
+  var text = (d.content||[]).map(function(c){return c.text||'';}).join('').replace(/```json|```/g,'').trim();
+  return JSON.parse(text);
 }
 
 async function assessOne(id){
   if(!settings.anthropicKey){showToast('Anthropic Key in Settings eintragen','err');return;}
-  const l=leads.find(x=>x.id===id);
-  const btn=document.getElementById('ai-'+id);
+  var l=leads.find(function(x){return x.id===id;});
+  var btn=document.getElementById('ai-'+id);
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span>';}
   try{
-    const r=await claudeAssess(l);
-    l.fit=r.fit; l.fitReason=r.reason; save(); render(); showToast('Assessed ✓');
-  }catch{
+    var r=await claudeAssess(l);
+    l.fit=r.fit; l.fitReason=r.reason; save(); render(); showToast('Assessed');
+  }catch(e){
     showToast('Assessment fehlgeschlagen','err');
-    if(btn){btn.disabled=false;btn.textContent='⚡ AI';}
+    if(btn){btn.disabled=false;btn.textContent='AI';}
   }
 }
 
 async function doYTSearch(){
-  const kw=document.getElementById('yt-kw').value.trim();
-  const max=document.getElementById('yt-max').value;
-  const errEl=document.getElementById('search-err');
+  var kw=document.getElementById('yt-kw').value.trim();
+  var max=document.getElementById('yt-max').value;
+  var errEl=document.getElementById('search-err');
   errEl.style.display='none';
   if(!settings.ytKey){errEl.textContent='YouTube API Key in Settings eintragen';errEl.style.display='block';return;}
   if(!kw) return;
 
-  const btn=document.getElementById('btn-yt-search');
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Suche…';
-  document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Channels werden gesucht…</div>';
+  var btn=document.getElementById('btn-yt-search');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Suche...';
+  document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Channels werden gesucht...</div>';
   document.getElementById('search-footer').style.display='none';
   ytResults=[]; ytSelected=new Set();
 
   try{
-    const sr=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(kw)}&maxResults=${max}&key=${settings.ytKey}`);
-    const sd=await sr.json();
+    var sr=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q='+encodeURIComponent(kw)+'&maxResults='+max+'&key='+settings.ytKey);
+    var sd=await sr.json();
     if(sd.error) throw new Error(sd.error.message);
-    if(!sd.items?.length){renderYT([]);btn.disabled=false;btn.textContent='🔍 Search';return;}
+    if(!sd.items||!sd.items.length){renderYT([]);btn.disabled=false;btn.textContent='Search';return;}
 
-    const ids=sd.items.map(i=>i.snippet.channelId).join(',');
-    const cr=await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,brandingSettings&id=${ids}&key=${settings.ytKey}`);
-    const cd=await cr.json();
+    var ids=sd.items.map(function(i){return i.snippet.channelId;}).join(',');
+    var cr=await fetch('https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,brandingSettings&id='+ids+'&key='+settings.ytKey);
+    var cd=await cr.json();
     if(cd.error) throw new Error(cd.error.message);
 
-    ytResults=(cd.items||[]).map(ch=>{
-      const subs=parseInt(ch.statistics?.subscriberCount||0);
-      const views=parseInt(ch.statistics?.viewCount||0);
-      const vids=Math.max(1,parseInt(ch.statistics?.videoCount||1));
-      const desc=ch.snippet?.description||'';
-      const email=desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/)?.[0]||'';
-      const handle=ch.snippet?.customUrl||'';
-      return{channelId:ch.id,name:ch.snippet?.title||'',handle,desc,
-        link:`https://youtube.com/${handle||'channel/'+ch.id}`,
-        thumb:ch.snippet?.thumbnails?.default?.url||'',
+    ytResults=(cd.items||[]).map(function(ch){
+      var subs=parseInt(ch.statistics&&ch.statistics.subscriberCount||0);
+      var views=parseInt(ch.statistics&&ch.statistics.viewCount||0);
+      var vids=Math.max(1,parseInt(ch.statistics&&ch.statistics.videoCount||1));
+      var desc=ch.snippet&&ch.snippet.description||'';
+      var emailMatch=desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+      var email=emailMatch?emailMatch[0]:'';
+      var handle=ch.snippet&&ch.snippet.customUrl||'';
+      return{
+        channelId:ch.id,
+        name:ch.snippet&&ch.snippet.title||'',
+        handle:handle,desc:desc,
+        link:'https://youtube.com/'+(handle||'channel/'+ch.id),
+        thumb:ch.snippet&&ch.snippet.thumbnails&&ch.snippet.thumbnails.default&&ch.snippet.thumbnails.default.url||'',
         subs:subs+'',avgV:fmtN(Math.round(views/vids)),
-        contact:email,fit:'',fitReason:''};
+        contact:email,fit:'',fitReason:''
+      };
     });
 
-    ytSelected=new Set(ytResults.map((_,i)=>i));
+    ytSelected=new Set(ytResults.map(function(_,i){return i;}));
     renderYT(ytResults);
   }catch(e){
     errEl.textContent=e.message||'YouTube API Fehler';
     errEl.style.display='block';
     document.getElementById('yt-results').innerHTML='';
   }
-  btn.disabled=false; btn.textContent='🔍 Search';
+  btn.disabled=false; btn.textContent='Search';
 }
 
 function renderYT(items){
-  const el=document.getElementById('yt-results');
-  const footer=document.getElementById('search-footer');
+  var el=document.getElementById('yt-results');
+  var footer=document.getElementById('search-footer');
   if(!items.length){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Keine Channels gefunden</div>';
     footer.style.display='none'; return;
   }
-  const allChk=ytSelected.size===items.length;
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--b1);z-index:1">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted)">
-        <input type="checkbox" ${allChk?'checked':''} onchange="toggleAllYT(this)" style="accent-color:var(--acc);width:14px;height:14px">
-        <span id="sel-count">${ytSelected.size} von ${items.length} ausgewählt</span>
-      </label>
-      ${items.some(r=>r.fit)?'<span style="font-size:11px;color:var(--gr);background:var(--gr-bg);padding:2px 9px;border-radius:10px;border:1px solid var(--gr-b)">AI assessed ✓</span>':''}
-    </div>
-    ${items.map((ch,i)=>`
-      <div class="yt-row" style="opacity:${ytSelected.has(i)?1:.4}" onclick="toggleYT(${i})">
-        <input type="checkbox" ${ytSelected.has(i)?'checked':''} onclick="event.stopPropagation();toggleYT(${i})" style="accent-color:var(--acc);width:14px;height:14px;flex-shrink:0">
-        ${ch.thumb?`<img src="${esc(ch.thumb)}" class="yt-thumb">`:'<div class="yt-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:#444">▶</div>'}
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ch.name)}</div>
-          <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
-            <span>${fmtN(ch.subs)} subs</span>
-            <span>~${ch.avgV} avg views</span>
-            ${ch.contact?`<span style="color:#4a9eff">${esc(ch.contact)}</span>`:''}
-          </div>
-        </div>
-        <div style="flex-shrink:0">${ch.fit?fitTag(ch.fit):''}</div>
-      </div>`).join('')}`;
+  var allChk=ytSelected.size===items.length;
+  var hdr='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--b1);z-index:1">'
+    +'<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted)">'
+    +'<input type="checkbox" '+(allChk?'checked':'')+' onchange="toggleAllYT(this)" style="accent-color:var(--acc);width:14px;height:14px">'
+    +'<span id="sel-count">'+ytSelected.size+' von '+items.length+' ausgewaehlt</span></label>'
+    +(items.some(function(r){return r.fit;})?'<span style="font-size:11px;color:var(--gr);background:var(--gr-bg);padding:2px 9px;border-radius:10px;border:1px solid var(--gr-b)">AI assessed</span>':'')
+    +'</div>';
 
+  var rows=items.map(function(ch,i){
+    var thumb=ch.thumb
+      ?'<img src="'+esc(ch.thumb)+'" class="yt-thumb">'
+      :'<div class="yt-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:#444">&#9654;</div>';
+    return '<div class="yt-row" style="opacity:'+(ytSelected.has(i)?1:.4)+'" onclick="toggleYT('+i+')">'
+      +'<input type="checkbox" '+(ytSelected.has(i)?'checked':'')+' onclick="event.stopPropagation();toggleYT('+i+')" style="accent-color:var(--acc);width:14px;height:14px;flex-shrink:0">'
+      +thumb
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(ch.name)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">'
+      +'<span>'+fmtN(ch.subs)+' subs</span><span>~'+ch.avgV+' avg views</span>'
+      +(ch.contact?'<span style="color:#4a9eff">'+esc(ch.contact)+'</span>':'')
+      +'</div></div>'
+      +'<div style="flex-shrink:0">'+(ch.fit?fitTag(ch.fit):'')+'</div>'
+      +'</div>';
+  }).join('');
+
+  el.innerHTML=hdr+rows;
   footer.style.display='flex';
-  document.getElementById('btn-import').textContent=`${ytSelected.size} Channels importieren`;
+  document.getElementById('btn-import').textContent=ytSelected.size+' Channels importieren';
 }
 
 function toggleYT(i){
@@ -508,63 +534,68 @@ function toggleYT(i){
   renderYT(ytResults);
 }
 function toggleAllYT(cb){
-  if(cb.checked) ytResults.forEach((_,i)=>ytSelected.add(i));
+  if(cb.checked) ytResults.forEach(function(_,i){ytSelected.add(i);});
   else ytSelected.clear();
   renderYT(ytResults);
 }
 
 async function assessAll(){
   if(!settings.anthropicKey){showToast('Anthropic Key in Settings eintragen','err');return;}
-  const btn=document.getElementById('btn-assess');
-  const st=document.getElementById('assess-st');
+  var btn=document.getElementById('btn-assess');
+  var st=document.getElementById('assess-st');
   btn.disabled=true;
-  for(let i=0;i<ytResults.length;i++){
-    st.textContent=`Assessing ${i+1}/${ytResults.length}…`;
+  for(var i=0;i<ytResults.length;i++){
+    st.textContent='Assessing '+(i+1)+'/'+ytResults.length+'...';
     try{
-      const r=await claudeAssess(ytResults[i]);
+      var r=await claudeAssess(ytResults[i]);
       ytResults[i].fit=r.fit; ytResults[i].fitReason=r.reason;
-    }catch{}
-    await new Promise(res=>setTimeout(res,380));
+    }catch(e){}
+    await new Promise(function(res){setTimeout(res,380);});
   }
-  ytSelected=new Set(ytResults.map((r,i)=>r.fit==='High Fit'?i:-1).filter(i=>i>=0));
+  ytSelected=new Set(ytResults.map(function(r,i){return r.fit==='High Fit'?i:-1;}).filter(function(i){return i>=0;}));
   renderYT(ytResults);
-  st.textContent=`Done — ${ytSelected.size} High Fit ausgewählt`;
+  st.textContent='Done -- '+ytSelected.size+' High Fit ausgewaehlt';
   btn.disabled=false;
 }
 
 function importSelected(){
-  const toAdd=ytResults.filter((_,i)=>ytSelected.has(i)).map(ch=>({
-    id:uid(),date:new Date().toISOString().slice(0,10),
-    name:ch.name,link:ch.link,thumb:ch.thumb,
-    subs:ch.subs,avgV:ch.avgV,contact:ch.contact,
-    desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
-    status:'Not Contacted',method:'',notes:''
-  }));
-  leads=[...toAdd,...leads];
+  var toAdd=ytResults.filter(function(_,i){return ytSelected.has(i);}).map(function(ch){
+    return {
+      id:uid(),date:new Date().toISOString().slice(0,10),
+      name:ch.name,link:ch.link,thumb:ch.thumb,
+      subs:ch.subs,avgV:ch.avgV,contact:ch.contact,
+      desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
+      status:'Not Contacted',method:'',notes:''
+    };
+  });
+  leads=toAdd.concat(leads);
   save(); render(); closeModal('m-search');
-  showToast(`${toAdd.length} Channels importiert ✓`);
+  showToast(toAdd.length+' Channels importiert');
 }
 
 function exportCSV(){
-  const h=['Name','Link','Subs','Avg Views','Kontakt','Fit','Reason','Status','Methode','Notizen'];
-  const rows=leads.map(l=>[l.name,l.link,l.subs,l.avgV,l.contact,l.fit,l.fitReason,l.status,l.method,l.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
-  const csv=[h.join(','),...rows].join('\n');
-  const a=document.createElement('a');
+  var h=['Name','Link','Subs','Avg Views','Kontakt','Fit','Reason','Status','Methode','Notizen'];
+  var rows=leads.map(function(l){
+    return [l.name,l.link,l.subs,l.avgV,l.contact,l.fit,l.fitReason,l.status,l.method,l.notes]
+      .map(function(v){return '"'+((v||'').replace(/"/g,'""'))+'"';}).join(',');
+  });
+  var csv=[h.join(',')].concat(rows).join('\n');
+  var a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download='leads-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 
-let toastT;
-function showToast(msg,type='ok'){
+var toastT;
+function showToast(msg,type){
   clearTimeout(toastT);
-  const el=document.getElementById('toast');
+  var el=document.getElementById('toast');
   el.textContent=msg;
   el.style.background=type==='err'?'var(--rd-bg)':'var(--gr-bg)';
-  el.style.border=`1px solid ${type==='err'?'var(--rd-b)':'var(--gr-b)'}`;
+  el.style.border='1px solid '+(type==='err'?'var(--rd-b)':'var(--gr-b)');
   el.style.color=type==='err'?'var(--rd)':'var(--gr)';
   el.style.display='block';
-  toastT=setTimeout(()=>el.style.display='none',3000);
+  toastT=setTimeout(function(){el.style.display='none';},3000);
 }
 
 buildFilters();
