@@ -79,6 +79,12 @@ td{border-bottom:1px solid var(--b1)}
 .yt-thumb{width:32px;height:32px;border-radius:50%;background:#1a1a1a;flex-shrink:0;object-fit:cover;border:1px solid var(--b2)}
 .err-bar{font-size:12px;color:var(--rd);background:var(--rd-bg);border:1px solid var(--rd-b);padding:8px 12px;border-radius:7px;margin-top:10px;display:none}
 .warn-bar{font-size:11px;color:var(--yw);background:var(--yw-bg);border:1px solid var(--yw-b);padding:3px 10px;border-radius:10px;display:none}
+.niche-chip{font-size:11px;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--b2);background:var(--s2);color:#888;transition:all .15s;white-space:nowrap}
+.niche-chip:hover{border-color:#444;color:var(--txt)}
+.niche-chip.active{border-color:var(--acc);background:#1a0803;color:var(--acc)}
+.mode-toggle{display:flex;gap:0;border:1px solid var(--b2);border-radius:8px;overflow:hidden}
+.mode-btn{padding:7px 14px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s;font-family:var(--sans)}
+.mode-btn.on{background:var(--acc);color:#fff}
 @media(max-width:600px){nav{padding:0 12px}.stats-grid{grid-template-columns:repeat(2,1fr)!important}}
 </style>
 </head>
@@ -96,7 +102,6 @@ td{border-bottom:1px solid var(--b1)}
   </div>
 </nav>
 
-<!-- TRACKER TAB -->
 <div id="tab-tracker" style="padding:20px">
   <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--b1);border-radius:12px;overflow:hidden;margin-bottom:20px">
     <div style="padding:16px 20px;background:var(--s1);border-right:1px solid var(--b1)">
@@ -139,7 +144,6 @@ td{border-bottom:1px solid var(--b1)}
   </div>
 </div>
 
-<!-- GUIDE TAB -->
 <div id="tab-guide" style="display:none;max-width:620px;margin:36px auto;padding:0 20px 60px">
   <div class="eyebrow">Einrichtung</div>
   <div class="section-h" style="margin-bottom:28px">Setup Guide</div>
@@ -149,7 +153,7 @@ td{border-bottom:1px solid var(--b1)}
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">YouTube API Key holen (kostenlos)</div>
       <div class="guide-step">1. Gehe zu <a href="https://console.cloud.google.com" target="_blank" style="color:#4a9eff">console.cloud.google.com</a></div>
       <div class="guide-step">2. Neues Projekt erstellen</div>
-      <div class="guide-step">3. "APIs & Services" &rarr; "Bibliothek" &rarr; "YouTube Data API v3" &rarr; Aktivieren</div>
+      <div class="guide-step">3. "APIs &amp; Services" &rarr; "Bibliothek" &rarr; "YouTube Data API v3" &rarr; Aktivieren</div>
       <div class="guide-step">4. "Anmeldedaten erstellen" &rarr; "API-Schlüssel" &rarr; Key kopieren</div>
       <div class="guide-step">5. Key in &#9881; Settings einfügen</div>
       <div class="guide-note">Kostenlos: 10.000 Requests/Tag</div>
@@ -168,19 +172,18 @@ td{border-bottom:1px solid var(--b1)}
   <div class="guide-card">
     <div class="guide-num">3</div>
     <div>
-      <div style="font-size:15px;font-weight:500;margin-bottom:10px">Auf GitHub Pages deployen</div>
-      <div class="guide-step">1. Diese Datei als <strong>index.html</strong> speichern</div>
-      <div class="guide-step">2. Neues GitHub Repo erstellen &rarr; index.html hochladen</div>
-      <div class="guide-step">3. Settings &rarr; Pages &rarr; Source: main &rarr; Save</div>
-      <div class="guide-step">4. URL: <strong>dein-name.github.io/lead-tracker</strong></div>
-      <div class="guide-note">Leads werden lokal in deinem Browser gespeichert</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:10px">Nischen-Suche erklärt</div>
+      <div class="guide-step">Die Suche findet Kanäle jetzt über ihre <strong>Videos</strong>, nicht den Kanalnamen.</div>
+      <div class="guide-step">Klick auf einen Chip wie <em>"Food Tour"</em> &rarr; findet Kanäle die solche Videos machen.</div>
+      <div class="guide-step">Mehrere Chips gleichzeitig = breitere Suche, mehr unique Kanäle.</div>
+      <div class="guide-note">Tipp: Eigenes Keyword eingeben für noch spezifischere Nischen wie "best burger london"</div>
     </div>
   </div>
   <div class="guide-card">
     <div class="guide-num">4</div>
     <div>
       <div style="font-size:15px;font-weight:500;margin-bottom:10px">Workflow</div>
-      <div class="guide-step">1. YouTube Search &rarr; Keyword: "food london vlog", "travel creator"</div>
+      <div class="guide-step">1. YouTube Search &rarr; Nischen-Chip wählen oder eigenes Keyword</div>
       <div class="guide-step">2. 20-50 Channels automatisch mit Subs + Kontakt</div>
       <div class="guide-step">3. AI Assess All &rarr; High / Moderate / Low Fit</div>
       <div class="guide-step">4. High Fits importieren &rarr; DMs schreiben &rarr; Status tracken</div>
@@ -216,24 +219,57 @@ td{border-bottom:1px solid var(--b1)}
 <!-- SEARCH MODAL -->
 <div id="m-search" class="overlay" style="display:none" onclick="if(event.target===this)closeModal('m-search')">
   <div class="modal modal-lg" onclick="event.stopPropagation()" style="padding:0;display:flex;flex-direction:column;overflow:hidden">
+
     <div style="padding:22px 24px;border-bottom:1px solid var(--b1)">
       <div class="eyebrow">YouTube Search</div>
-      <div class="section-h">Channels automatisch finden</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="search" id="yt-kw" placeholder="food london vlog, travel creator, smma coach" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
-        <select id="yt-max" style="width:110px">
-          <option value="10">10 results</option>
-          <option value="20" selected>20 results</option>
-          <option value="30">30 results</option>
-          <option value="50">50 results</option>
-        </select>
-        <button class="btn btn-p" id="btn-yt-search" onclick="doYTSearch()">&#128269; Search</button>
+      <div class="section-h">Channels über Nische finden</div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="mode-toggle">
+          <button class="mode-btn on" id="mode-niche" onclick="setMode('niche')">Nischen-Suche</button>
+          <button class="mode-btn" id="mode-direct" onclick="setMode('direct')">Direktsuche</button>
+        </div>
+        <span id="mode-hint" style="font-size:11px;color:var(--muted)">Sucht nach Videos in der Nische &rarr; extrahiert die Kanäle</span>
       </div>
+
+      <!-- Niche mode -->
+      <div id="niche-panel">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Nische wählen — klick startet sofort:</div>
+        <div id="niche-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="search" id="yt-kw-niche" placeholder='Eigenes Keyword: "best pizza london", "travel europe vlog"...' style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
+          <select id="yt-max-niche" style="width:110px">
+            <option value="10">10 results</option>
+            <option value="20" selected>20 results</option>
+            <option value="30">30 results</option>
+            <option value="50">50 results</option>
+          </select>
+          <button class="btn btn-p" onclick="doYTSearch()">&#128269; Search</button>
+        </div>
+      </div>
+
+      <!-- Direct mode -->
+      <div id="direct-panel" style="display:none">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Sucht direkt nach Kanalnamen (alte Methode):</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="search" id="yt-kw-direct" placeholder="food, travel, lifestyle..." style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doYTSearch()">
+          <select id="yt-max-direct" style="width:110px">
+            <option value="10">10 results</option>
+            <option value="20" selected>20 results</option>
+            <option value="30">30 results</option>
+            <option value="50">50 results</option>
+          </select>
+          <button class="btn btn-p" onclick="doYTSearch()">&#128269; Search</button>
+        </div>
+      </div>
+
       <div id="search-err" class="err-bar"></div>
     </div>
+
     <div id="yt-results" style="flex:1;overflow-y:auto;padding:0 24px;min-height:180px;max-height:52vh">
-      <div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">Keyword eingeben und Search klicken</div>
+      <div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">Nische wählen oder Keyword eingeben</div>
     </div>
+
     <div id="search-footer" style="display:none;padding:14px 24px;border-top:1px solid var(--b1);gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-p" id="btn-import" onclick="importSelected()">Importieren</button>
       <button class="btn btn-g" id="btn-assess" onclick="assessAll()">&#9889; AI Assess All</button>
@@ -250,10 +286,28 @@ td{border-bottom:1px solid var(--b1)}
 var leads    = JSON.parse(localStorage.getItem('uldis-leads-v3') || '[]');
 var settings = JSON.parse(localStorage.getItem('uldis-keys-v1')  || '{}');
 var ytResults = [], ytSelected = new Set(), filterFit = 'All';
+var searchMode = 'niche';
+var activeChips = new Set();
 
 var STATUS = ['Not Contacted','DM Sent','Email Sent','Replied','Call Booked','Closed','Not Interested'];
 var METHOD = ['--','Instagram DM','Email','YouTube Comment','Twitter/X DM','LinkedIn'];
 var FITS   = ['All','High Fit','Moderate Fit','Low Fit'];
+
+// Chips: video title phrases that reveal content type, not channel name
+var NICHES = [
+  { label: '🍕 Food Tour',          query: 'best food tour' },
+  { label: '🍔 Best Restaurant',    query: 'best restaurant in' },
+  { label: '🌮 Street Food',        query: 'street food vlog' },
+  { label: '✈️ Travel Vlog',        query: 'travel vlog europe' },
+  { label: '🗺️ City Guide',         query: 'things to do in' },
+  { label: '🧳 Solo Travel',        query: 'solo travel vlog' },
+  { label: '🍜 Trying Local Food',  query: 'trying local food' },
+  { label: '🏆 Ranking Everything', query: 'ranking every' },
+  { label: '🎒 Budget Travel',      query: 'budget travel guide' },
+  { label: '🎥 Day In My Life',     query: 'day in my life vlog' },
+  { label: '🍣 Eating Challenge',   query: 'eating challenge vlog' },
+  { label: '🔪 Home Cooking',       query: 'easy recipe at home' },
+];
 
 function save(){ localStorage.setItem('uldis-leads-v3', JSON.stringify(leads)); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
@@ -269,6 +323,29 @@ function fitTag(f){
   return '';
 }
 
+function setMode(m){
+  searchMode = m;
+  document.getElementById('mode-niche').classList.toggle('on', m==='niche');
+  document.getElementById('mode-direct').classList.toggle('on', m==='direct');
+  document.getElementById('niche-panel').style.display  = m==='niche'  ? 'block' : 'none';
+  document.getElementById('direct-panel').style.display = m==='direct' ? 'block' : 'none';
+  document.getElementById('mode-hint').textContent = m==='niche'
+    ? 'Sucht nach Videos in der Nische \u2192 extrahiert die Kan\u00e4le'
+    : 'Sucht direkt nach Kanalnamen (wie vorher)';
+}
+
+function buildNicheChips(){
+  document.getElementById('niche-chips').innerHTML = NICHES.map(function(n,i){
+    return '<button class="niche-chip'+(activeChips.has(i)?' active':'')+'" onclick="toggleChip('+i+')" title="sucht nach: '+n.query+'">'+n.label+'</button>';
+  }).join('');
+}
+
+function toggleChip(i){
+  if(activeChips.has(i)) activeChips.delete(i);
+  else { activeChips.add(i); doYTSearch(); } // auto-search on activate
+  buildNicheChips();
+}
+
 function switchTab(t){
   document.getElementById('tab-tracker').style.display = t==='tracker'?'block':'none';
   document.getElementById('tab-guide').style.display   = t==='guide'  ?'block':'none';
@@ -281,6 +358,7 @@ function openModal(id){
     document.getElementById('inp-yt').value = settings.ytKey||'';
     document.getElementById('inp-ai').value = settings.anthropicKey||'';
   }
+  if(id==='m-search') buildNicheChips();
   document.getElementById(id).style.display='flex';
 }
 function closeModal(id){ document.getElementById(id).style.display='none'; }
@@ -305,7 +383,7 @@ function render(){
   var tbody = document.getElementById('leads-tbody');
   var vis = leads.filter(function(l){ return filterFit==='All'||l.fit===filterFit; });
   if(!vis.length){
-    tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads -- YouTube durchsuchen oder manuell hinzufuegen</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads \u2014 YouTube durchsuchen oder manuell hinzuf\u00fcgen</td></tr>';
     return;
   }
   tbody.innerHTML = vis.map(function(l){
@@ -353,7 +431,6 @@ function saveSettings(){
   updateStats();
 }
 
-// GEO FILTER — runs before AI call
 function isBlockedRegion(name, desc, contact){
   var text = (name + ' ' + desc + ' ' + contact).toLowerCase();
   var blockedWords = ['india','mumbai','delhi','bangalore','chennai','hyderabad','kolkata','pune',
@@ -381,17 +458,11 @@ async function claudeAssess(ch){
   var contact = ch.contact || '';
   var avgV    = ch.avgV    || 'unknown';
   var subs    = fmtN(ch.subs);
-
   var blocked = isBlockedRegion(name, desc, contact);
-
   var geoNote = blocked
     ? 'IMPORTANT: This channel is from a blocked region (Asia/Africa/developing market). You MUST rate it as Low Fit regardless of anything else.'
     : 'Target regions: USA, UK, Germany, Austria, Switzerland, Netherlands, Canada, Australia, France, Scandinavia, other Western Europe. Only give High Fit to channels clearly from these regions.';
-
-  var ratingNote = blocked
-    ? ''
-    : 'High Fit: 5K-500K subs, food/travel/lifestyle niche, active, Western/English-speaking country. Moderate Fit: right region but wrong niche or too large. Low Fit: wrong region, inactive, or big corporate brand.';
-
+  var ratingNote = blocked ? '' : 'High Fit: 5K-500K subs, food/travel/lifestyle niche, active, Western/English-speaking country. Moderate Fit: right region but wrong niche or too large. Low Fit: wrong region, inactive, or big corporate brand.';
   var prompt = 'You are a video editor outreach specialist.\n'
     + 'Channel: ' + name + '\n'
     + 'Subs: ' + subs + '\n'
@@ -403,7 +474,6 @@ async function claudeAssess(ch){
     + 'Reply ONLY with raw JSON, no markdown, no explanation:\n'
     + '{"fit":"High Fit","reason":"max 10 words"}\n'
     + 'fit must be exactly one of: "High Fit", "Moderate Fit", "Low Fit"';
-
   var r = await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{
@@ -412,11 +482,7 @@ async function claudeAssess(ch){
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'
     },
-    body:JSON.stringify({
-      model:'claude-sonnet-4-6',
-      max_tokens:120,
-      messages:[{role:'user',content:prompt}]
-    })
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:120,messages:[{role:'user',content:prompt}]})
   });
   if(!r.ok) throw new Error('Claude API ' + r.status);
   var d = await r.json();
@@ -438,16 +504,107 @@ async function assessOne(id){
   }
 }
 
+// ── SEARCH ENGINE ────────────────────────────────────────────────────────────
 async function doYTSearch(){
-  var kw=document.getElementById('yt-kw').value.trim();
-  var max=document.getElementById('yt-max').value;
-  var errEl=document.getElementById('search-err');
-  errEl.style.display='none';
+  var errEl = document.getElementById('search-err');
+  errEl.style.display = 'none';
   if(!settings.ytKey){errEl.textContent='YouTube API Key in Settings eintragen';errEl.style.display='block';return;}
+  searchMode === 'niche' ? await doNicheSearch() : await doDirectSearch();
+}
+
+async function doNicheSearch(){
+  var customKw = document.getElementById('yt-kw-niche').value.trim();
+  var max = parseInt(document.getElementById('yt-max-niche').value);
+  var errEl = document.getElementById('search-err');
+
+  var queries = [];
+  activeChips.forEach(function(i){ queries.push(NICHES[i].query); });
+  if(customKw) queries.push(customKw);
+
+  if(!queries.length){
+    errEl.textContent='Nischen-Chip wählen oder eigenes Keyword eingeben';
+    errEl.style.display='block'; return;
+  }
+
+  document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Nische wird durchsucht...</div>';
+  document.getElementById('search-footer').style.display='none';
+  ytResults=[]; ytSelected=new Set();
+
+  var perQuery = Math.max(5, Math.ceil(max / queries.length));
+
+  try{
+    // Step 1 — fetch videos, collect unique channelIds
+    var channelIdSet = new Set();
+    var channelVideoMap = {};
+
+    for(var q=0; q<queries.length; q++){
+      var vr = await fetch(
+        'https://www.googleapis.com/youtube/v3/search'
+        +'?part=snippet&type=video'
+        +'&q='+encodeURIComponent(queries[q])
+        +'&maxResults='+perQuery
+        +'&relevanceLanguage=en'
+        +'&key='+settings.ytKey
+      );
+      var vd = await vr.json();
+      if(vd.error) throw new Error(vd.error.message);
+      (vd.items||[]).forEach(function(item){
+        var cid = item.snippet.channelId;
+        if(!channelIdSet.has(cid)){
+          channelIdSet.add(cid);
+          channelVideoMap[cid] = item.snippet.title;
+        }
+      });
+    }
+
+    if(!channelIdSet.size){ renderYT([]); return; }
+
+    // Step 2 — fetch channel details (batches of 50)
+    var allChannelItems = [];
+    var idArr = Array.from(channelIdSet);
+    for(var start=0; start<idArr.length; start+=50){
+      var batch = idArr.slice(start, start+50).join(',');
+      var cr = await fetch('https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,brandingSettings&id='+batch+'&key='+settings.ytKey);
+      var cd = await cr.json();
+      if(cd.error) throw new Error(cd.error.message);
+      allChannelItems = allChannelItems.concat(cd.items||[]);
+    }
+
+    ytResults = allChannelItems.map(function(ch){
+      var subs  = parseInt(ch.statistics&&ch.statistics.subscriberCount||0);
+      var views = parseInt(ch.statistics&&ch.statistics.viewCount||0);
+      var vids  = Math.max(1,parseInt(ch.statistics&&ch.statistics.videoCount||1));
+      var desc  = ch.snippet&&ch.snippet.description||'';
+      var emailMatch = desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+      var handle = ch.snippet&&ch.snippet.customUrl||'';
+      return{
+        channelId:ch.id, name:ch.snippet&&ch.snippet.title||'',
+        handle:handle, desc:desc,
+        link:'https://youtube.com/'+(handle||'channel/'+ch.id),
+        thumb:ch.snippet&&ch.snippet.thumbnails&&ch.snippet.thumbnails.default&&ch.snippet.thumbnails.default.url||'',
+        subs:subs+'', avgV:fmtN(Math.round(views/vids)),
+        contact:emailMatch?emailMatch[0]:'',
+        fit:'', fitReason:'',
+        foundVia: channelVideoMap[ch.id]||''
+      };
+    });
+
+    ytSelected = new Set(ytResults.map(function(_,i){return i;}));
+    renderYT(ytResults);
+
+  }catch(e){
+    document.getElementById('search-err').textContent=e.message||'YouTube API Fehler';
+    document.getElementById('search-err').style.display='block';
+    document.getElementById('yt-results').innerHTML='';
+  }
+}
+
+async function doDirectSearch(){
+  var kw  = document.getElementById('yt-kw-direct').value.trim();
+  var max = document.getElementById('yt-max-direct').value;
+  var errEl = document.getElementById('search-err');
   if(!kw) return;
 
-  var btn=document.getElementById('btn-yt-search');
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Suche...';
   document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Channels werden gesucht...</div>';
   document.getElementById('search-footer').style.display='none';
   ytResults=[]; ytSelected=new Set();
@@ -456,7 +613,7 @@ async function doYTSearch(){
     var sr=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q='+encodeURIComponent(kw)+'&maxResults='+max+'&key='+settings.ytKey);
     var sd=await sr.json();
     if(sd.error) throw new Error(sd.error.message);
-    if(!sd.items||!sd.items.length){renderYT([]);btn.disabled=false;btn.textContent='Search';return;}
+    if(!sd.items||!sd.items.length){renderYT([]);return;}
 
     var ids=sd.items.map(function(i){return i.snippet.channelId;}).join(',');
     var cr=await fetch('https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,brandingSettings&id='+ids+'&key='+settings.ytKey);
@@ -469,17 +626,12 @@ async function doYTSearch(){
       var vids=Math.max(1,parseInt(ch.statistics&&ch.statistics.videoCount||1));
       var desc=ch.snippet&&ch.snippet.description||'';
       var emailMatch=desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
-      var email=emailMatch?emailMatch[0]:'';
       var handle=ch.snippet&&ch.snippet.customUrl||'';
-      return{
-        channelId:ch.id,
-        name:ch.snippet&&ch.snippet.title||'',
-        handle:handle,desc:desc,
+      return{channelId:ch.id,name:ch.snippet&&ch.snippet.title||'',handle:handle,desc:desc,
         link:'https://youtube.com/'+(handle||'channel/'+ch.id),
         thumb:ch.snippet&&ch.snippet.thumbnails&&ch.snippet.thumbnails.default&&ch.snippet.thumbnails.default.url||'',
         subs:subs+'',avgV:fmtN(Math.round(views/vids)),
-        contact:email,fit:'',fitReason:''
-      };
+        contact:emailMatch?emailMatch[0]:'',fit:'',fitReason:''};
     });
 
     ytSelected=new Set(ytResults.map(function(_,i){return i;}));
@@ -489,8 +641,8 @@ async function doYTSearch(){
     errEl.style.display='block';
     document.getElementById('yt-results').innerHTML='';
   }
-  btn.disabled=false; btn.textContent='Search';
 }
+// ─────────────────────────────────────────────────────────────────────────────
 
 function renderYT(items){
   var el=document.getElementById('yt-results');
@@ -503,7 +655,7 @@ function renderYT(items){
   var hdr='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--b1);z-index:1">'
     +'<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted)">'
     +'<input type="checkbox" '+(allChk?'checked':'')+' onchange="toggleAllYT(this)" style="accent-color:var(--acc);width:14px;height:14px">'
-    +'<span id="sel-count">'+ytSelected.size+' von '+items.length+' ausgewaehlt</span></label>'
+    +'<span>'+ytSelected.size+' von '+items.length+' ausgew\u00e4hlt</span></label>'
     +(items.some(function(r){return r.fit;})?'<span style="font-size:11px;color:var(--gr);background:var(--gr-bg);padding:2px 9px;border-radius:10px;border:1px solid var(--gr-b)">AI assessed</span>':'')
     +'</div>';
 
@@ -519,6 +671,7 @@ function renderYT(items){
       +'<div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">'
       +'<span>'+fmtN(ch.subs)+' subs</span><span>~'+ch.avgV+' avg views</span>'
       +(ch.contact?'<span style="color:#4a9eff">'+esc(ch.contact)+'</span>':'')
+      +(ch.foundVia?'<span style="color:#383838" title="'+esc(ch.foundVia)+'">via: '+esc(ch.foundVia.slice(0,40))+'</span>':'')
       +'</div></div>'
       +'<div style="flex-shrink:0">'+(ch.fit?fitTag(ch.fit):'')+'</div>'
       +'</div>';
@@ -546,27 +699,21 @@ async function assessAll(){
   btn.disabled=true;
   for(var i=0;i<ytResults.length;i++){
     st.textContent='Assessing '+(i+1)+'/'+ytResults.length+'...';
-    try{
-      var r=await claudeAssess(ytResults[i]);
-      ytResults[i].fit=r.fit; ytResults[i].fitReason=r.reason;
-    }catch(e){}
+    try{ var r=await claudeAssess(ytResults[i]); ytResults[i].fit=r.fit; ytResults[i].fitReason=r.reason; }catch(e){}
     await new Promise(function(res){setTimeout(res,380);});
   }
   ytSelected=new Set(ytResults.map(function(r,i){return r.fit==='High Fit'?i:-1;}).filter(function(i){return i>=0;}));
   renderYT(ytResults);
-  st.textContent='Done -- '+ytSelected.size+' High Fit ausgewaehlt';
+  st.textContent='Done \u2014 '+ytSelected.size+' High Fit ausgew\u00e4hlt';
   btn.disabled=false;
 }
 
 function importSelected(){
   var toAdd=ytResults.filter(function(_,i){return ytSelected.has(i);}).map(function(ch){
-    return {
-      id:uid(),date:new Date().toISOString().slice(0,10),
-      name:ch.name,link:ch.link,thumb:ch.thumb,
-      subs:ch.subs,avgV:ch.avgV,contact:ch.contact,
-      desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
-      status:'Not Contacted',method:'',notes:''
-    };
+    return{id:uid(),date:new Date().toISOString().slice(0,10),
+      name:ch.name,link:ch.link,thumb:ch.thumb,subs:ch.subs,avgV:ch.avgV,
+      contact:ch.contact,desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
+      status:'Not Contacted',method:'',notes:''};
   });
   leads=toAdd.concat(leads);
   save(); render(); closeModal('m-search');
@@ -579,11 +726,9 @@ function exportCSV(){
     return [l.name,l.link,l.subs,l.avgV,l.contact,l.fit,l.fitReason,l.status,l.method,l.notes]
       .map(function(v){return '"'+((v||'').replace(/"/g,'""'))+'"';}).join(',');
   });
-  var csv=[h.join(',')].concat(rows).join('\n');
   var a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='leads-'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent([h.join(',')].concat(rows).join('\n'));
+  a.download='leads-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
 
 var toastT;
