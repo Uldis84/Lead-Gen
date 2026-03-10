@@ -117,8 +117,8 @@ td{border-bottom:1px solid var(--b1)}
       <div class="stat-l">Contacted</div>
     </div>
     <div style="padding:16px 20px;background:var(--s1)">
-      <div class="stat-n" id="s-won" style="color:var(--acc)">0</div>
-      <div class="stat-l">Clients Won</div>
+      <div class="stat-n" id="s-won" style="color:var(--muted)">0</div>
+      <div class="stat-l" id="s-won-label">Follow Up Due</div>
     </div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
@@ -289,9 +289,23 @@ var ytResults = [], ytSelected = new Set(), filterFit = 'All';
 var searchMode = 'niche';
 var activeChips = new Set();
 
-var STATUS = ['Not Contacted','DM Sent','Email Sent','Replied','Call Booked','Closed','Not Interested'];
-var METHOD = ['--','Instagram DM','Email','YouTube Comment','Twitter/X DM','LinkedIn'];
-var FITS   = ['All','High Fit','Moderate Fit','Low Fit'];
+var STATUS = ['New','First Email Sent','Follow Up Sent','Replied','Call Booked','Closed','Not Interested'];
+var METHOD = ['--','Email','Instagram DM','YouTube Comment','Twitter/X DM','LinkedIn'];
+var FITS   = ['All','⏰ Follow Up Due','High Fit','Moderate Fit','Low Fit'];
+
+// Auto-set followUpDate 3 days after First Email Sent
+function statusColor(s){
+  if(s==='Closed') return 'var(--gr)';
+  if(s==='Replied'||s==='Call Booked') return 'var(--yw)';
+  if(s==='First Email Sent') return '#4a9eff';
+  if(s==='Follow Up Sent') return '#a78bfa';
+  return 'var(--muted)';
+}
+function isFollowUpDue(l){
+  if(l.status!=='First Email Sent') return false;
+  if(!l.followUpDate) return false;
+  return l.followUpDate <= new Date().toISOString().slice(0,10);
+}
 
 // Chips: video title phrases that reveal content type, not channel name
 var NICHES = [
@@ -370,24 +384,36 @@ function buildFilters(){
 }
 function setFit(f){ filterFit=f; buildFilters(); render(); }
 
+function matchesFilter(l){
+  if(filterFit==='All') return true;
+  if(filterFit==='\u23f0 Follow Up Due') return isFollowUpDue(l);
+  return l.fit===filterFit;
+}
+
 function updateStats(){
+  var today = new Date().toISOString().slice(0,10);
+  var due = leads.filter(function(l){ return l.status==='First Email Sent' && l.followUpDate && l.followUpDate<=today; });
   document.getElementById('s-total').textContent = leads.length;
   document.getElementById('s-high').textContent  = leads.filter(function(l){return l.fit==='High Fit';}).length;
-  document.getElementById('s-cont').textContent  = leads.filter(function(l){return l.status&&l.status!=='Not Contacted';}).length;
-  document.getElementById('s-won').textContent   = leads.filter(function(l){return l.status==='Closed';}).length;
+  document.getElementById('s-cont').textContent  = leads.filter(function(l){return l.status&&l.status!=='New';}).length;
+  document.getElementById('s-won').textContent   = due.length;
+  document.getElementById('s-won-label').textContent = due.length > 0 ? '⏰ Follow Up Due' : 'Follow Up Due';
+  document.getElementById('s-won').style.color = due.length > 0 ? 'var(--yw)' : 'var(--muted)';
   document.getElementById('warn-bar').style.display = (!settings.ytKey&&!settings.anthropicKey)?'inline-flex':'none';
 }
 
 function render(){
   updateStats();
   var tbody = document.getElementById('leads-tbody');
-  var vis = leads.filter(function(l){ return filterFit==='All'||l.fit===filterFit; });
+  var vis = leads.filter(function(l){ return matchesFilter(l); });
   if(!vis.length){
     tbody.innerHTML='<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:13px">Keine Leads \u2014 YouTube durchsuchen oder manuell hinzuf\u00fcgen</td></tr>';
     return;
   }
   tbody.innerHTML = vis.map(function(l){
-    var statusColor = l.status==='Closed'?'var(--gr)':l.status==='Replied'||l.status==='Call Booked'?'var(--yw)':'var(--muted)';
+    var due = isFollowUpDue(l);
+    var rowBg = due ? 'background:#1a1200' : '';
+    var sc = statusColor(l.status);
     var thumb = l.thumb
       ? '<img src="'+esc(l.thumb)+'" class="yt-thumb" style="width:28px;height:28px">'
       : '<div style="width:28px;height:28px;border-radius:50%;background:#1a1a1a;flex-shrink:0"></div>';
@@ -396,7 +422,19 @@ function render(){
       : '<span style="color:var(--subtle);font-size:12px">--</span>';
     var statusOpts = STATUS.map(function(s){ return '<option'+(l.status===s?' selected':'')+'>'+s+'</option>'; }).join('');
     var methodOpts = METHOD.map(function(m){ return '<option'+(l.method===m?' selected':'')+'>'+m+'</option>'; }).join('');
-    return '<tr class="trow">'
+
+    // Follow-up date cell
+    var fuCell = '';
+    if(l.status==='First Email Sent'){
+      var fuDate = l.followUpDate || '';
+      fuCell = '<div style="font-size:11px;margin-top:3px">'
+        +(due
+          ? '<span style="color:var(--yw);font-weight:600">\u23f0 Follow Up heute!</span>'
+          : '<span style="color:#444">Follow up: '+fuDate+'</span>')
+        +'</div>';
+    }
+
+    return '<tr class="trow" style="'+rowBg+'">'
       +'<td style="min-width:200px"><div style="display:flex;align-items:center;gap:9px;padding:4px 12px">'+thumb
       +'<div style="min-width:0;flex:1">'
       +'<input class="ci" style="font-weight:500;color:#a8c8ff;padding:3px 0" value="'+esc(l.name)+'" placeholder="Channel name" onchange="upd(\''+l.id+'\',\'name\',this.value)">'
@@ -406,7 +444,7 @@ function render(){
       +'<td style="min-width:80px"><input class="ci ci-sm" value="'+esc(l.avgV)+'" placeholder="1K-4K" onchange="upd(\''+l.id+'\',\'avgV\',this.value)"></td>'
       +'<td style="min-width:160px"><input class="ci" style="font-size:12px;color:#4a9eff" value="'+esc(l.contact)+'" placeholder="email / link" onchange="upd(\''+l.id+'\',\'contact\',this.value)"></td>'
       +'<td style="min-width:200px;padding:10px 12px">'+fitCell+'</td>'
-      +'<td style="min-width:130px"><select class="ci-sel" style="color:'+statusColor+'" onchange="upd(\''+l.id+'\',\'status\',this.value)">'+statusOpts+'</select></td>'
+      +'<td style="min-width:150px"><select class="ci-sel" style="color:'+sc+'" onchange="updStatus(\''+l.id+'\',this.value)">'+statusOpts+'</select>'+fuCell+'</td>'
       +'<td style="min-width:130px"><select class="ci-sel" onchange="upd(\''+l.id+'\',\'method\',this.value)">'+methodOpts+'</select></td>'
       +'<td style="min-width:160px"><input class="ci" style="font-size:12px" value="'+esc(l.notes)+'" placeholder="Notizen..." onchange="upd(\''+l.id+'\',\'notes\',this.value)"></td>'
       +'<td style="padding:10px 8px"><button class="ai-btn" id="ai-'+l.id+'" onclick="assessOne(\''+l.id+'\')">AI</button></td>'
@@ -416,8 +454,24 @@ function render(){
 }
 
 function upd(id,f,v){ var l=leads.find(function(x){return x.id===id;}); if(l){l[f]=v;save();updateStats();} }
+
+function updStatus(id, newStatus){
+  var l = leads.find(function(x){return x.id===id;});
+  if(!l) return;
+  l.status = newStatus;
+  // Auto-set follow-up date 3 days from now when first email is sent
+  if(newStatus === 'First Email Sent'){
+    var d = new Date(); d.setDate(d.getDate()+3);
+    l.followUpDate = d.toISOString().slice(0,10);
+  }
+  // Clear follow-up date when they move past that stage
+  if(newStatus === 'Follow Up Sent' || newStatus === 'Replied' || newStatus === 'Call Booked' || newStatus === 'Closed' || newStatus === 'Not Interested'){
+    l.followUpDate = '';
+  }
+  save(); render();
+}
 function addLead(){
-  leads.unshift({id:uid(),date:new Date().toISOString().slice(0,10),name:'',link:'',thumb:'',subs:'',avgV:'',contact:'',fit:'',fitReason:'',status:'Not Contacted',method:'',notes:''});
+  leads.unshift({id:uid(),date:new Date().toISOString().slice(0,10),name:'',link:'',thumb:'',subs:'',avgV:'',contact:'',fit:'',fitReason:'',status:'New',followUpDate:'',method:'',notes:''});
   save(); render();
 }
 function delLead(id){ leads=leads.filter(function(l){return l.id!==id;}); save(); render(); }
@@ -528,6 +582,8 @@ async function doNicheSearch(){
 
   document.getElementById('yt-results').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px"><span class="spin"></span> Nische wird durchsucht...</div>';
   document.getElementById('search-footer').style.display='none';
+  var errEl = document.getElementById('search-err');
+  errEl.style.background=''; errEl.style.color=''; errEl.style.borderColor='';
   ytResults=[]; ytSelected=new Set();
 
   var perQuery = Math.max(5, Math.ceil(max / queries.length));
@@ -559,6 +615,10 @@ async function doNicheSearch(){
 
     if(!channelIdSet.size){ renderYT([]); return; }
 
+    // Build set of existing channel IDs/links to deduplicate
+    var existingIds = new Set(leads.map(function(l){ return l.channelId||''; }).filter(Boolean));
+    var existingLinks = new Set(leads.map(function(l){ return (l.link||'').toLowerCase(); }));
+
     // Step 2 — fetch channel details (batches of 50)
     var allChannelItems = [];
     var idArr = Array.from(channelIdSet);
@@ -570,17 +630,17 @@ async function doNicheSearch(){
       allChannelItems = allChannelItems.concat(cd.items||[]);
     }
 
-    ytResults = allChannelItems.map(function(ch){
+    var allRaw = allChannelItems.map(function(ch){
       var subs  = parseInt(ch.statistics&&ch.statistics.subscriberCount||0);
       var views = parseInt(ch.statistics&&ch.statistics.viewCount||0);
       var vids  = Math.max(1,parseInt(ch.statistics&&ch.statistics.videoCount||1));
       var desc  = ch.snippet&&ch.snippet.description||'';
       var emailMatch = desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
       var handle = ch.snippet&&ch.snippet.customUrl||'';
+      var link = 'https://youtube.com/'+(handle||'channel/'+ch.id);
       return{
         channelId:ch.id, name:ch.snippet&&ch.snippet.title||'',
-        handle:handle, desc:desc,
-        link:'https://youtube.com/'+(handle||'channel/'+ch.id),
+        handle:handle, desc:desc, link:link,
         thumb:ch.snippet&&ch.snippet.thumbnails&&ch.snippet.thumbnails.default&&ch.snippet.thumbnails.default.url||'',
         subs:subs+'', avgV:fmtN(Math.round(views/vids)),
         contact:emailMatch?emailMatch[0]:'',
@@ -588,6 +648,20 @@ async function doNicheSearch(){
         foundVia: channelVideoMap[ch.id]||''
       };
     });
+
+    var dupCount = 0;
+    ytResults = allRaw.filter(function(ch){
+      var isDup = existingIds.has(ch.channelId) || existingLinks.has(ch.link.toLowerCase());
+      if(isDup) dupCount++;
+      return !isDup;
+    });
+
+    if(dupCount > 0){
+      var errEl2 = document.getElementById('search-err');
+      errEl2.textContent = dupCount+' bereits vorhandene Kanäle wurden ausgeblendet.';
+      errEl2.style.background='var(--yw-bg)'; errEl2.style.color='var(--yw)'; errEl2.style.borderColor='var(--yw-b)';
+      errEl2.style.display='block';
+    }
 
     ytSelected = new Set(ytResults.map(function(_,i){return i;}));
     renderYT(ytResults);
@@ -620,19 +694,35 @@ async function doDirectSearch(){
     var cd=await cr.json();
     if(cd.error) throw new Error(cd.error.message);
 
-    ytResults=(cd.items||[]).map(function(ch){
+    var existingIds2 = new Set(leads.map(function(l){ return l.channelId||''; }).filter(Boolean));
+    var existingLinks2 = new Set(leads.map(function(l){ return (l.link||'').toLowerCase(); }));
+
+    var rawDirect=(cd.items||[]).map(function(ch){
       var subs=parseInt(ch.statistics&&ch.statistics.subscriberCount||0);
       var views=parseInt(ch.statistics&&ch.statistics.viewCount||0);
       var vids=Math.max(1,parseInt(ch.statistics&&ch.statistics.videoCount||1));
       var desc=ch.snippet&&ch.snippet.description||'';
       var emailMatch=desc.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
       var handle=ch.snippet&&ch.snippet.customUrl||'';
+      var link='https://youtube.com/'+(handle||'channel/'+ch.id);
       return{channelId:ch.id,name:ch.snippet&&ch.snippet.title||'',handle:handle,desc:desc,
-        link:'https://youtube.com/'+(handle||'channel/'+ch.id),
+        link:link,
         thumb:ch.snippet&&ch.snippet.thumbnails&&ch.snippet.thumbnails.default&&ch.snippet.thumbnails.default.url||'',
         subs:subs+'',avgV:fmtN(Math.round(views/vids)),
         contact:emailMatch?emailMatch[0]:'',fit:'',fitReason:''};
     });
+
+    var dupCount2=0;
+    ytResults=rawDirect.filter(function(ch){
+      var isDup=existingIds2.has(ch.channelId)||existingLinks2.has(ch.link.toLowerCase());
+      if(isDup) dupCount2++;
+      return !isDup;
+    });
+    if(dupCount2>0){
+      errEl.textContent=dupCount2+' bereits vorhandene Kanäle wurden ausgeblendet.';
+      errEl.style.background='var(--yw-bg)'; errEl.style.color='var(--yw)'; errEl.style.borderColor='var(--yw-b)';
+      errEl.style.display='block';
+    }
 
     ytSelected=new Set(ytResults.map(function(_,i){return i;}));
     renderYT(ytResults);
@@ -711,9 +801,10 @@ async function assessAll(){
 function importSelected(){
   var toAdd=ytResults.filter(function(_,i){return ytSelected.has(i);}).map(function(ch){
     return{id:uid(),date:new Date().toISOString().slice(0,10),
+      channelId:ch.channelId,
       name:ch.name,link:ch.link,thumb:ch.thumb,subs:ch.subs,avgV:ch.avgV,
       contact:ch.contact,desc:ch.desc,fit:ch.fit,fitReason:ch.fitReason,
-      status:'Not Contacted',method:'',notes:''};
+      status:'New',followUpDate:'',method:'',notes:''};
   });
   leads=toAdd.concat(leads);
   save(); render(); closeModal('m-search');
