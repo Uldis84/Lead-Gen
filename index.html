@@ -283,8 +283,9 @@ td{border-bottom:1px solid var(--b1)}
 <div id="toast" class="toast"></div>
 
 <script>
-var leads    = JSON.parse(localStorage.getItem('uldis-leads-v3') || '[]');
-var settings = JSON.parse(localStorage.getItem('uldis-keys-v1')  || '{}');
+var leads     = JSON.parse(localStorage.getItem('uldis-leads-v3')    || '[]');
+var settings  = JSON.parse(localStorage.getItem('uldis-keys-v1')     || '{}');
+var blocklist = JSON.parse(localStorage.getItem('uldis-blocklist-v1') || '[]'); // deleted channel IDs + links
 var ytResults = [], ytSelected = new Set(), filterFit = 'All';
 var searchMode = 'niche';
 var activeChips = new Set();
@@ -474,7 +475,17 @@ function addLead(){
   leads.unshift({id:uid(),date:new Date().toISOString().slice(0,10),name:'',link:'',thumb:'',subs:'',avgV:'',contact:'',fit:'',fitReason:'',status:'New',followUpDate:'',method:'',notes:''});
   save(); render();
 }
-function delLead(id){ leads=leads.filter(function(l){return l.id!==id;}); save(); render(); }
+function saveBlocklist(){ localStorage.setItem('uldis-blocklist-v1', JSON.stringify(blocklist)); }
+
+function delLead(id){
+  var l = leads.find(function(x){ return x.id===id; });
+  if(l){
+    var entry = { channelId: l.channelId||'', link: (l.link||'').toLowerCase() };
+    if(entry.channelId || entry.link){ blocklist.push(entry); saveBlocklist(); }
+  }
+  leads = leads.filter(function(x){ return x.id!==id; });
+  save(); render();
+}
 
 function saveSettings(){
   settings.ytKey        = document.getElementById('inp-yt').value.trim();
@@ -615,9 +626,13 @@ async function doNicheSearch(){
 
     if(!channelIdSet.size){ renderYT([]); return; }
 
-    // Build set of existing channel IDs/links to deduplicate
+    // Build sets: existing leads + blocklisted (deleted) channels
     var existingIds = new Set(leads.map(function(l){ return l.channelId||''; }).filter(Boolean));
     var existingLinks = new Set(leads.map(function(l){ return (l.link||'').toLowerCase(); }));
+    blocklist.forEach(function(b){
+      if(b.channelId) existingIds.add(b.channelId);
+      if(b.link)      existingLinks.add(b.link.toLowerCase());
+    });
 
     // Step 2 — fetch channel details (batches of 50)
     var allChannelItems = [];
@@ -696,6 +711,10 @@ async function doDirectSearch(){
 
     var existingIds2 = new Set(leads.map(function(l){ return l.channelId||''; }).filter(Boolean));
     var existingLinks2 = new Set(leads.map(function(l){ return (l.link||'').toLowerCase(); }));
+    blocklist.forEach(function(b){
+      if(b.channelId) existingIds2.add(b.channelId);
+      if(b.link)      existingLinks2.add(b.link.toLowerCase());
+    });
 
     var rawDirect=(cd.items||[]).map(function(ch){
       var subs=parseInt(ch.statistics&&ch.statistics.subscriberCount||0);
