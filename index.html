@@ -308,20 +308,23 @@ function isFollowUpDue(l){
   return l.followUpDate <= new Date().toISOString().slice(0,10);
 }
 
-// Chips: video title phrases that reveal content type, not channel name
+// Chips: video title phrases that reveal narrative/storytelling content
 var NICHES = [
-  { label: '🍕 Food Tour',          query: 'best food tour' },
-  { label: '🍔 Best Restaurant',    query: 'best restaurant in' },
-  { label: '🌮 Street Food',        query: 'street food vlog' },
-  { label: '✈️ Travel Vlog',        query: 'travel vlog europe' },
-  { label: '🗺️ City Guide',         query: 'things to do in' },
-  { label: '🧳 Solo Travel',        query: 'solo travel vlog' },
-  { label: '🍜 Trying Local Food',  query: 'trying local food' },
-  { label: '🏆 Ranking Everything', query: 'ranking every' },
-  { label: '🎒 Budget Travel',      query: 'budget travel guide' },
-  { label: '🎥 Day In My Life',     query: 'day in my life vlog' },
-  { label: '🍣 Eating Challenge',   query: 'eating challenge vlog' },
-  { label: '🔪 Home Cooking',       query: 'easy recipe at home' },
+  // Narrative & Documentary
+  { label: '🎬 Mini Documentary',    query: 'mini documentary' },
+  { label: '📖 My Story',            query: 'my story storytime' },
+  { label: '🕵️ True Crime',          query: 'true crime documentary' },
+  { label: '🏛️ History Deep Dive',   query: 'history documentary explained' },
+  { label: '🌍 Travel Documentary',  query: 'travel documentary vlog' },
+  // Personal Essay / Vlog
+  { label: '🎥 Essay Video',         query: 'video essay explained' },
+  { label: '🗣️ Personal Vlog',       query: 'life update vlog' },
+  { label: '🧳 Moving / New Life',   query: 'I moved to vlog' },
+  { label: '💡 Finance / Career',    query: 'how I built explained story' },
+  // High-retention formats
+  { label: '🔪 Food Storytelling',   query: 'best food tour' },
+  { label: '🏆 Ranking / Challenge', query: 'ranking every I tried' },
+  { label: '📍 City / Place',        query: 'things to do in guide' },
 ];
 
 function save(){ localStorage.setItem('uldis-leads-v3', JSON.stringify(leads)); }
@@ -527,7 +530,7 @@ async function claudeAssess(ch){
   var geoNote = blocked
     ? 'IMPORTANT: This channel is from a blocked region (Asia/Africa/developing market). You MUST rate it as Low Fit regardless of anything else.'
     : 'Target regions: USA, UK, Germany, Austria, Switzerland, Netherlands, Canada, Australia, France, Scandinavia, other Western Europe. Only give High Fit to channels clearly from these regions.';
-  var ratingNote = blocked ? '' : 'High Fit: 5K-500K subs, food/travel/lifestyle niche, active, Western/English-speaking country. Moderate Fit: right region but wrong niche or too large. Low Fit: wrong region, inactive, or big corporate brand.';
+  var ratingNote = blocked ? '' : 'High Fit: 5K-500K subs, long-form narrative content (documentary, essay, storytelling vlog, travel, food, history, true crime, personal story, finance), active, Western/English-speaking country. The niche does not matter — what matters is that the videos are long-form and story-driven. Moderate Fit: right region but too large (500K+), or content is mostly short-form. Low Fit: wrong region, inactive, or purely entertainment with no narrative structure.';
   var prompt = 'You are a video editor outreach specialist.\n'
     + 'Channel: ' + name + '\n'
     + 'Subs: ' + subs + '\n'
